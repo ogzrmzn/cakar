@@ -12,21 +12,27 @@ içinde taşıyan bir Android uygulaması.
 |---|---|
 | `index.html`, `sw.js`, `manifest.webmanifest`, ikonlar | Web sürümü (tek dosya + çevrimdışı çalışma) |
 | `android/` | Android projesi (WebView kabuğu, `assets/www/index.html`) |
-| `dist/cakar-siren-1.1.aab` | Play Console'a yüklenecek paket (yükleme anahtarıyla imzalı) |
-| `dist/cakar-siren-1.1-test.apk` | Telefona doğrudan kurup denemek için |
+| `dist/cakar-siren-1.2.aab` | Play Console'a yüklenecek paket (yükleme anahtarıyla imzalı) |
+| `dist/cakar-siren-1.2-test.apk` | Telefona doğrudan kurup denemek için |
 | `play-store/` | Mağaza görselleri (ikon, tanıtım görseli, ekran görüntüleri) |
 
 ## Telefonda hızlı test
 
-- **Android uygulaması:** `dist/cakar-siren-1.1-test.apk` dosyasını telefona indirip kurun
+- **Android uygulaması:** `dist/cakar-siren-1.2-test.apk` dosyasını telefona indirip kurun
   ("bilinmeyen kaynaklara izin ver" gerekir).
 - **Tarayıcıda:** Depo ayarlarından *Settings → Pages → Branch: main / (root)* açılırsa
   `https://ogzrmzn.github.io/cakar/` adresinden açılır, ana ekrana eklenebilir.
 
+## Sürüm 1.2
+
+- **Ayarlar paneli yeniden tasarlandı:** Işık deseni seçimi panelin içine, Siren sesi'nin üstüne taşındı
+  (ikonlu kartlar). Hız büyük rakamla gösterilir; hızlı mod ayrı bir kartta; ses seviyesi siren sesinin altında.
+  Seçili kartlar temanın renkleriyle vurgulanır. Canlı ekranın altında yalnızca 3 buton kalır.
+
 ## Sürüm 1.1 — neler değişti
 
 - **Yeni tasarım:** Ana ekranda tema kartları; temaya dokununca doğrudan tam ekran ışık.
-  Canlı ekranda yalnızca desen şeridi + 3 buton (Siren, Korna, Ayarlar).
+  Canlı ekranda yalnızca 3 buton (Siren, Korna, Ayarlar).
 - **Yeni temalar:** *LED Tepe Lambası* (8 modüllü ışık çubuğu, sıralı çakma) ve
   *Beyaz Ortalı* (mavi-kırmızı, ortada çapraz çakan beyazlar). Toplam 7 tema.
 - **Yeni desenler:** *Dörtlü* (4'lü hızlı flaş) ve *Akan* (soldan sağa sıralı).
