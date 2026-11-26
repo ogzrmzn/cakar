@@ -1,0 +1,8 @@
+# İmzalama anahtarı ve şifresi ASLA depoya girmemeli
+keystore.properties
+*.jks
+*.keystore
+# Derleme çıktıları
+.gradle/
+build/
+local.properties

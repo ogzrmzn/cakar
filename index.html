@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#050608">
+<meta name="color-scheme" content="dark">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Çakar Sim">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Çakar &amp; Siren Simülatörü</title>
+
+<style>
+/* =====================================================================
+   TASARIM SİSTEMİ — sade, koyu, büyük dokunma alanları
+   ===================================================================== */
+:root{
+  --bg:#050608; --surface:rgba(255,255,255,.05); --surface-2:rgba(255,255,255,.09);
+  --border:rgba(255,255,255,.08); --text:#f5f7fb; --muted:#8a92a6;
+  --accent:#ffb020;
+  --st:env(safe-area-inset-top,0px); --sb:env(safe-area-inset-bottom,0px);
+  --sl:env(safe-area-inset-left,0px); --sr:env(safe-area-inset-right,0px);
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI Variable","Segoe UI",Roboto,system-ui,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:var(--font);
+  -webkit-font-smoothing:antialiased;overscroll-behavior:none;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
+svg{display:block}
+.screen{position:fixed;inset:0;display:none}
+.screen.active{display:block}
+.glass{background:rgba(14,15,20,.6);backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);
+  border:1px solid rgba(255,255,255,.12)}
+.icon-btn{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;
+  background:var(--surface);border:1px solid var(--border);color:#cfd5e2}
+.btn-main{width:100%;height:56px;border-radius:18px;background:#fff;color:#000;font-size:17px;font-weight:700}
+.btn-main:active,.icon-btn:active{transform:scale(.96)}
+
+/* =====================================================================
+   1) UYARI EKRANI
+   ===================================================================== */
+#intro{overflow-y:auto}
+.intro{min-height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:22px;
+  padding:calc(24px + var(--st)) calc(20px + var(--sr)) calc(24px + var(--sb)) calc(20px + var(--sl))}
+.intro-head{text-align:center}
+.intro-head img{width:84px;height:84px;border-radius:22px;box-shadow:0 0 0 1px rgba(255,255,255,.1),-16px 14px 50px -10px #2a5bff,16px 14px 50px -10px #ff2a3a}
+.intro-head h1{font-size:28px;letter-spacing:-.02em;margin:18px 0 6px}
+.intro-head p{margin:0;color:var(--muted);font-size:15px}
+.intro-card{width:100%;max-width:460px;background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:18px}
+.note{display:flex;gap:12px;padding:4px 0 14px}
+.note+.note{border-top:1px solid var(--border);padding-top:14px}
+.note .ic{flex:0 0 40px;height:40px;border-radius:12px;display:grid;place-items:center}
+.note .y{background:rgba(255,196,0,.14);color:#ffc93d}.note .r{background:rgba(255,70,70,.14);color:#ff6464}
+.note b{display:block;font-size:15px;margin-bottom:3px}
+.note p{margin:0;font-size:14px;line-height:1.45;color:#aeb6c6}
+@media (orientation:landscape) and (max-height:560px){
+  .intro{flex-direction:row;gap:36px}
+  .intro-head{flex:0 0 240px}
+}
+
+/* =====================================================================
+   2) ANA EKRAN — tema ızgarası
+   ===================================================================== */
+#home{overflow-y:auto}
+.home{max-width:980px;margin:0 auto;
+  padding:calc(16px + var(--st)) calc(16px + var(--sr)) calc(28px + var(--sb)) calc(16px + var(--sl))}
+.top{display:flex;align-items:center;justify-content:space-between;margin:4px 4px 18px}
+.top h1{font-size:26px;letter-spacing:-.02em;margin:0}
+.top p{margin:2px 0 0;color:var(--muted);font-size:14px}
+.themes{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:12px}
+.theme{text-align:left;border-radius:22px;background:var(--surface);border:1px solid var(--border);padding:10px 10px 14px;
+  transition:transform .15s,background .2s}
+.theme:active{transform:scale(.97);background:var(--surface-2)}
+.theme b{display:block;font-size:16px;margin:12px 4px 2px;letter-spacing:-.01em}
+.theme small{display:block;font-size:12.5px;color:var(--muted);margin:0 4px;line-height:1.35}
+/* Mini ışık çubuğu önizlemesi (yavaş, güvenli animasyon) */
+.bar{display:flex;gap:4px;height:70px;padding:9px;border-radius:15px;background:#0a0b0f;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
+.bar i{flex:1;border-radius:7px;background:radial-gradient(circle at 50% 50%,#fff 0 12%,var(--c) 45%,color-mix(in srgb,var(--c) 45%,#000) 100%);
+  box-shadow:0 0 14px 1px color-mix(in srgb,var(--c) 70%,transparent);animation:pv 1.6s steps(1,end) infinite}
+.bar i.d{animation-delay:-.8s}
+.bar.rnd i:nth-child(2){filter:hue-rotate(90deg)}.bar.rnd i:nth-child(3){filter:hue-rotate(180deg)}.bar.rnd i:nth-child(4){filter:hue-rotate(270deg)}
+@keyframes pv{0%{opacity:1}50%{opacity:.14}}
+@media (prefers-reduced-motion:reduce){.bar i{animation:none!important}}
+.fine{font-size:12px;color:#5d6476;text-align:center;line-height:1.5;margin:22px 8px 0}
+
+/* =====================================================================
+   3) CANLI EKRAN
+   ===================================================================== */
+#live{background:#000}
+#cv{position:absolute;inset:0;width:100%;height:100%}
+.hud{position:absolute;inset:0;pointer-events:none;transition:opacity .3s}
+.hud>*{pointer-events:auto}
+.hud.hidden{opacity:0}
+.hud.hidden *{pointer-events:none!important}
+#live.nocursor{cursor:none}
+.hud-top{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:10px;
+  padding:calc(12px + var(--st)) calc(14px + var(--sr)) 0 calc(14px + var(--sl))}
+.round{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto}
+.round:active{transform:scale(.92)}
+.title-pill{flex:1;min-width:0;height:40px;border-radius:99px;display:flex;align-items:center;justify-content:center;gap:8px;
+  font-size:14px;font-weight:600;padding:0 14px;white-space:nowrap;overflow:hidden}
+.title-pill .fast{font-size:11px;font-weight:700;color:#000;background:var(--accent);border-radius:99px;padding:2px 7px;display:none}
+.title-pill .fast.on{display:inline-block}
+
+.hud-bottom{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;gap:10px;
+  padding:0 calc(12px + var(--sr)) calc(12px + var(--sb)) calc(12px + var(--sl))}
+/* Desen şeridi */
+.patterns{display:flex;gap:4px;padding:4px;border-radius:99px;max-width:100%;overflow-x:auto;scrollbar-width:none}
+.patterns::-webkit-scrollbar{display:none}
+.patterns button{flex:0 0 auto;padding:9px 14px;border-radius:99px;font-size:14px;font-weight:600;color:#c3cad8}
+.patterns button.on{background:#fff;color:#000}
+/* Alt dok */
+.dock{display:flex;align-items:center;gap:18px;padding:8px 18px;border-radius:40px}
+.dock-btn{display:flex;flex-direction:column;align-items:center;gap:4px;width:66px;font-size:11.5px;font-weight:600;color:#cdd3df}
+.dock-btn .b{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.1);transition:background .2s,transform .1s}
+.dock-btn:active .b{transform:scale(.92)}
+.dock-btn.on .b{background:#fff;color:#000;border-color:#fff}
+.dock-btn.horn .b{width:70px;height:70px;background:linear-gradient(145deg,#ffb020,#ff6a00);color:#1a0d00;border:0;
+  box-shadow:0 8px 28px -6px rgba(255,120,0,.75)}
+.dock-btn.horn.held .b{transform:scale(.9);filter:brightness(1.25)}
+.dock-btn span:last-child{max-width:84px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (orientation:landscape) and (max-height:500px){
+  .hud-bottom{align-items:flex-start;gap:8px}
+  .hud.sheet-open .patterns{display:none}
+  .dock{gap:12px;padding:6px 14px}
+  .dock-btn .b{width:48px;height:48px}.dock-btn.horn .b{width:60px;height:60px}
+}
+
+/* Ayarlar sayfası */
+.sheet{width:100%;max-width:520px;border-radius:24px;padding:6px 16px;max-height:min(60vh,460px);overflow-y:auto;
+  transition:opacity .2s,transform .2s}
+.sheet.closed{display:none}
+@media (orientation:landscape) and (max-height:500px){
+  .sheet{position:fixed;right:calc(12px + var(--sr));top:calc(66px + var(--st));bottom:calc(12px + var(--sb));width:360px;max-height:none}
+}
+.row{padding:14px 0;border-bottom:1px solid var(--border)}
+.row:last-child{border-bottom:0}
+.row-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:14px;font-weight:600}
+.row-head .val{color:var(--muted);font-weight:500;font-variant-numeric:tabular-nums}
+.row-head.flat{margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{padding:9px 13px;border-radius:99px;font-size:13.5px;font-weight:600;background:var(--surface);
+  border:1px solid var(--border);color:#c4cbd9}
+.chips button.on{background:#fff;color:#000;border-color:#fff}
+.seg{display:flex;gap:4px;padding:4px;background:rgba(255,255,255,.06);border-radius:13px}
+.seg button{flex:1;padding:10px 4px;border-radius:10px;font-size:14px;font-weight:600;color:#aab2c4}
+.seg button.on{background:#fff;color:#000}
+.sub{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.4}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:30px;background:transparent;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:6px;
+  background:linear-gradient(90deg,#fff var(--p,50%),rgba(255,255,255,.14) var(--p,50%))}
+input[type=range]::-moz-range-track{height:6px;border-radius:6px;background:rgba(255,255,255,.14)}
+input[type=range]::-moz-range-progress{height:6px;border-radius:6px;background:#fff}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;margin-top:-10px;border-radius:50%;
+  background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.5)}
+input[type=range]::-moz-range-thumb{width:26px;height:26px;border:0;border-radius:50%;background:#fff}
+/* Anahtar (switch) */
+.switch{width:52px;height:32px;border-radius:99px;background:rgba(255,255,255,.16);position:relative;transition:background .2s;flex:0 0 auto}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;transition:transform .2s}
+.switch.on{background:var(--accent)}
+.switch.on::after{transform:translateX(20px)}
+
+/* Bildirim ve onay penceresi */
+#toast{position:fixed;left:50%;top:calc(70px + var(--st));transform:translateX(-50%);padding:9px 16px;border-radius:99px;
+  font-size:14px;font-weight:600;pointer-events:none;opacity:0;transition:opacity .3s;white-space:nowrap;z-index:20}
+#toast.show{opacity:1}
+.modal{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:20px}
+.modal.hidden{display:none}
+.modal-card{width:100%;max-width:400px;background:#14161c;border:1px solid var(--border);border-radius:24px;padding:22px}
+.modal-card h2{font-size:19px;margin:0 0 10px;display:flex;gap:10px;align-items:center}
+.modal-card p{margin:0 0 18px;color:#b9c0cf;font-size:14.5px;line-height:1.5}
+.modal-actions{display:flex;gap:10px}
+.modal-actions button{flex:1;height:50px;border-radius:15px;font-weight:700;font-size:15px}
+.modal-actions .cancel{background:var(--surface-2)}
+.modal-actions .ok{background:var(--accent);color:#000}
+</style>
+</head>
+<body>
+
+<!-- ============================ 1) UYARI ============================ -->
+<section id="intro" class="screen active">
+  <div class="intro">
+    <div class="intro-head">
+      <img src="icon.svg" alt="">
+      <h1>Çakar &amp; Siren</h1>
+      <p>Film, video ve eğlence için ışık ve siren efektleri</p>
+    </div>
+    <div class="intro-card">
+      <div class="note"><div class="ic y" data-icon="shield"></div>
+        <div><b>Yalnızca eğlence ve film çekimi</b>
+          <p>Bu uygulama yalnızca eğlence, oyun ve film çekimi içindir. Trafikte veya araç camında kullanmak yasa dışıdır.</p></div></div>
+      <div class="note"><div class="ic r" data-icon="zap"></div>
+        <div><b>Işığa duyarlılık (epilepsi) uyarısı</b>
+          <p>Yanıp sönen parlak ışıklar içerir. Işığa duyarlı epilepsiniz varsa kullanmayın; baş dönmesi, görme
+             bozukluğu veya kas seğirmesi olursa hemen durdurun.</p></div></div>
+      <button id="btnOk" class="btn-main">Anladım</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 2) ANA EKRAN ============================ -->
+<section id="home" class="screen">
+  <div class="home">
+    <header class="top">
+      <div><h1>Çakar &amp; Siren</h1><p>Bir tema seçin</p></div>
+      <button class="icon-btn" id="btnInfo" aria-label="Uyarılar" data-icon="info"></button>
+    </header>
+    <div class="themes" id="themes"></div>
+    <p class="fine">Yalnızca eğlence, oyun ve film/video çekimi içindir. Trafikte kullanmayın.</p>
+  </div>
+</section>
+
+<!-- ============================ 3) CANLI EKRAN ============================ -->
+<section id="live" class="screen">
+  <canvas id="cv"></canvas>
+  <div class="hud" id="hud">
+    <div class="hud-top">
+      <button class="round glass" id="btnClose" aria-label="Kapat" data-icon="x"></button>
+      <div class="title-pill glass"><span id="liveName"></span><span class="fast" id="fastBadge">HIZLI</span></div>
+      <button class="round glass" id="btnRotate" aria-label="Ekranı döndür" data-icon="rotate"></button>
+      <button class="round glass" id="btnFs" aria-label="Tam ekran" data-icon="max"></button>
+    </div>
+
+    <div class="hud-bottom">
+      <div class="sheet glass closed" id="sheet">
+        <div class="row">
+          <div class="row-head"><span>Hız</span><span class="val" id="rateVal"></span></div>
+          <input type="range" id="rate" aria-label="Hız">
+          <div class="chips" id="ratePresets" style="margin-top:8px"></div>
+        </div>
+        <div class="row">
+          <div class="row-head flat"><span>Gerçekçi hız (hızlı mod)</span><button class="switch" id="fastSwitch" aria-label="Hızlı mod"></button></div>
+          <div class="sub">Kapalıyken flaşlar saniyede en fazla 3 kez olur. Açınca 12'ye kadar çıkar.</div>
+        </div>
+        <div class="row">
+          <div class="row-head"><span>Siren sesi</span></div>
+          <div class="chips" id="sounds"></div>
+        </div>
+        <div class="row">
+          <div class="row-head"><span>Ses seviyesi</span><span class="val" id="volVal"></span></div>
+          <input type="range" id="volume" min="0" max="100" step="1" aria-label="Ses seviyesi">
+        </div>
+        <div class="row">
+          <div class="row-head"><span>Görünüm</span></div>
+          <div class="seg" id="views"></div>
+        </div>
+      </div>
+
+      <div class="patterns glass" id="patterns"></div>
+
+      <div class="dock glass">
+        <button class="dock-btn" id="btnSiren"><span class="b" id="sirenIcon"></span><span id="sirenLabel">Siren</span></button>
+        <button class="dock-btn horn" id="btnHorn"><span class="b" data-icon="horn"></span><span>Korna</span></button>
+        <button class="dock-btn" id="btnSheet"><span class="b" data-icon="sliders"></span><span>Ayarlar</span></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div id="toast" class="glass"></div>
+<div id="modal" class="modal hidden">
+  <div class="modal-card">
+    <h2><span data-icon="zap"></span>Hızlı mod</h2>
+    <p>Hızlı mod, gerçek tepe lambaları gibi saniyede 3'ten fazla (en fazla 12) flaş üretir. Bu hız, ışığa duyarlı
+       epilepsisi olan kişilerde nöbet tetikleyebilir. Çevrenizde böyle biri varsa açmayın. Rahatsızlık hissederseniz hemen kapatın.</p>
+    <div class="modal-actions"><button class="cancel" id="modalNo">Vazgeç</button><button class="ok" id="modalYes">Anladım, aç</button></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* =====================================================================
+   İKONLAR
+   ===================================================================== */
+const ICONS = {
+  x:'<path d="M18 6 6 18M6 6l12 12"/>',
+  max:'<path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/>',
+  min:'<path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/>',
+  rotate:'<rect x="6" y="3" width="12" height="18" rx="2" transform="rotate(-30 12 12)"/><path d="M3 12a9 9 0 0 1 3-6.7M21 12a9 9 0 0 1-3 6.7"/><path d="M3 5v4h4M21 19v-4h-4"/>',
+  play:'<path d="M7 4.5v15l12.5-7.5z" fill="currentColor" stroke="none"/>',
+  stop:'<rect x="7" y="7" width="10" height="10" rx="1.5" fill="currentColor" stroke="none"/>',
+  horn:'<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
+  sliders:'<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
+  info:'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
+  zap:'<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>',
+  shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4M12 16h.01"/>'
+};
+const icon = (n, s = 22) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[n]}</svg>`;
+document.querySelectorAll('[data-icon]').forEach(el => el.innerHTML = icon(el.dataset.icon, el.dataset.icon === 'horn' ? 28 : 22));
+
+/* =====================================================================
+   TEMALAR
+   Her tema, soldan sağa dizilen ışık modüllerinden oluşan bir "ışık çubuğu"dur.
+   g (grup): L = sol taraf, R = sağ taraf, CL / CR = ortadaki beyazların sol / sağ yarısı.
+   Desenler modülleri bu gruplara göre yakar. Gerçek kurum logosu / yazısı yoktur.
+   ===================================================================== */
+const COLORS = { B:'#1d5cff', R:'#ff1f1f', W:'#eef3ff', O:'#ff8a00' };
+const mods = (spec) => spec.split(' ').map(t => ({ c:t[0], g:t.slice(2) }));   // "B:L R:R" → modüller
+const THEMES = [
+  { id:'klasik',    name:'Mavi-Kırmızı',      desc:'Klasik, iki büyük lamba',               modules:mods('B:L R:R'),                         pattern:'double', sound:'wail'  },
+  { id:'ledbar',    name:'LED Tepe Lambası',  desc:'Uzun ışık çubuğu, sıralı hızlı çakma',  modules:mods('B:L B:L B:L B:L R:R R:R R:R R:R'), pattern:'scan',   sound:'yelp'  },
+  { id:'beyazorta', name:'Beyaz Ortalı',      desc:'Mavi-kırmızı, ortada beyaz flaşlar',    modules:mods('B:L B:L B:L W:CL W:CR R:R R:R R:R'), pattern:'quad', sound:'phaser'},
+  { id:'ambulans',  name:'Kırmızı-Beyaz',     desc:'Ambulans tarzı',                        modules:mods('R:L W:R'),                         pattern:'alt',    sound:'hilo'  },
+  { id:'itfaiye',   name:'Kırmızı',           desc:'İtfaiye tarzı, döner ışık',             modules:mods('R:L R:R'),                         pattern:'rotator',sound:'wail'  },
+  { id:'turuncu',   name:'Turuncu',           desc:'Yol yardım / iş makinesi',              modules:mods('O:L O:R'),                         pattern:'rotator',sound:'beep'  },
+  { id:'disko',     name:'Disko / Parti',     desc:'Rastgele renkler',                      modules:mods('*:L *:R *:L *:R'), random:true,   pattern:'strobe', sound:'party' },
+];
+
+/* =====================================================================
+   DESENLER
+   steps(n): [[yanacak gruplar / modül sıraları], süre_ms] listesi; [] = hepsi sönük.
+   env: [yanma, sönme] zaman sabitleri (sn) — LED gibi anında yanıp kısa art ışımayla söner.
+   Süreler "doğal" hızdır; seçilen hıza göre otomatik ölçeklenir.
+   ===================================================================== */
+const LA = ['L', 'CR'], RA = ['R', 'CL'];            // sol renk + sağ beyaz / sağ renk + sol beyaz (çapraz)
+const PATTERNS = {
+  alt:    { name:'Dönüşüm', env:[.09,.16],  steps:() => [[LA,560],[RA,560]] },
+  double: { name:'Çift',    env:[.012,.06], steps:() => [[LA,90],[[],110],[LA,90],[[],580],[RA,90],[[],110],[RA,90],[[],580]] },
+  quad:   { name:'Dörtlü',  env:[.008,.045],steps:() => { const a = []; for (const g of [LA, RA]) for (let i = 0; i < 4; i++) a.push([g,50],[[],50]); return a; } },
+  scan:   { name:'Akan',    env:[.008,.16], steps:n => { const s = []; for (let i = 0; i < n; i++) s.push(i); for (let i = n - 2; i > 0; i--) s.push(i); return s.map(i => [[i],100]); } },
+  rotator:{ name:'Döner',   continuous:true },
+  strobe: { name:'Strobe',  env:[.008,.05], steps:() => [[['ALL'],60],[[],300],[['ALL'],60],[[],300]] },
+};
+
+/* GÜVENLİK
+   Normal modda herhangi bir 1,05 sn'lik pencerede en fazla 3 flaş başlar (ışığa duyarlılık sınırı;
+   50 ms pay ekran yenileme gecikmesi içindir). Hızlı mod kullanıcı onayıyla açılır, üst sınır 12/sn'dir
+   ve o modda tüm ekranı aydınlatan efektler kapatılır (yanıp sönen alan küçülür). */
+const WINDOW_MS = 1050;
+const SAFE = { perWin:3,  max:{ alt:2.8, double:2.3, quad:2.8, scan:2.8, rotator:2.6, strobe:2.8 }, presets:[1, 1.5, 2] };
+const FAST = { perWin:13, max:{ alt:12, double:12, quad:12, scan:12, rotator:5, strobe:12 },     presets:[4, 6, 9] };
+const MIN_RATE = 1, ROT_PERIOD = .75;
+
+// Desenin doğal hızı (flaş/sn)
+function natRate(key, n){
+  const p = PATTERNS[key];
+  if (p.continuous) return 2 / ROT_PERIOD;
+  const st = p.steps(n); let on = 0, total = 0;
+  st.forEach((s, i) => { const prev = st[(i - 1 + st.length) % st.length];
+    if (s[0].length && JSON.stringify(s[0]) !== JSON.stringify(prev[0])) on++; total += s[1]; });
+  return on / (total / 1000);
+}
+
+/* =====================================================================
+   YARDIMCILAR
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem('cakar2:' + k); return v == null ? d : JSON.parse(v); }catch{ return d; } },
+  set(k, v){ try{ localStorage.setItem('cakar2:' + k, JSON.stringify(v)); }catch{} }
+};
+const hexRgb = h => [1,3,5].map(i => parseInt(h.slice(i, i + 2), 16));
+function mix(a, b, t){ const x = hexRgb(a), y = hexRgb(b);
+  return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join(''); }
+const lumC = {};
+const lum = c => lumC[c] ?? (lumC[c] = (() => { const [r, g, b] = hexRgb(c); return (.2126*r + .7152*g + .0722*b) / 255; })());
+const gainOf = c => 1 - .6 * Math.pow(lum(c), 1.5);     // beyaz gibi parlak renkler beyaza doymasın
+const DISCO = ['#ff1f6e','#ff2bd6','#a32bff','#4b3bff','#1f8bff','#00e0ff','#00ff9c','#5bff1f','#e6ff1f','#ffc21f','#ff7a1f','#ff2b2b'];
+let lastDisco = -1;
+function randomColor(){ let i; do i = Math.floor(Math.random() * DISCO.length); while (i === lastDisco); lastDisco = i; return DISCO[i]; }
+function rrect(g, x, y, w, h, r){ r = Math.min(r, w / 2, h / 2); g.beginPath(); g.moveTo(x + r, y);
+  g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+
+/* =====================================================================
+   IŞIK DOKULARI (bir kez çizilir, önbellekten kullanılır)
+   ===================================================================== */
+const cache = new Map();
+function cached(key, make){ let c = cache.get(key); if (!c){ if (cache.size > 120) cache.clear(); c = make(); cache.set(key, c); } return c; }
+function sprite(kind, color){
+  return cached(kind + color, () => {
+    const S = 256, c = document.createElement('canvas'); c.width = c.height = S;
+    const g = c.getContext('2d'), [r, gg, b] = hexRgb(color), rgba = a => `rgba(${r},${gg},${b},${a})`;
+    if (kind === 'star'){                 // kamera merceğinin yıldız ışınları
+      [[0,.03,1],[Math.PI/2,.03,1],[Math.PI/4,.018,.6],[-Math.PI/4,.018,.6]].forEach(([a, th, len]) => {
+        g.save(); g.translate(S/2, S/2); g.rotate(a); g.scale(1, th);
+        const rg = g.createRadialGradient(0, 0, 0, 0, 0, S/2 * len);
+        rg.addColorStop(0, 'rgba(255,255,255,1)'); rg.addColorStop(.25, rgba(.8)); rg.addColorStop(1, rgba(0));
+        g.fillStyle = rg; g.beginPath(); g.arc(0, 0, S/2 * len, 0, Math.PI * 2); g.fill(); g.restore();
+      });
+      return c;
+    }
+    const grd = g.createRadialGradient(S/2, S/2, 0, S/2, S/2, S/2);
+    if (kind === 'glow'){ grd.addColorStop(0, rgba(1)); grd.addColorStop(.1, rgba(.7)); grd.addColorStop(.3, rgba(.26)); grd.addColorStop(.6, rgba(.07)); grd.addColorStop(1, rgba(0)); }
+    else { const [wr, wg, wb] = hexRgb(mix(color, '#ffffff', .55));
+      grd.addColorStop(0, '#fff'); grd.addColorStop(.16, 'rgba(255,255,255,.95)'); grd.addColorStop(.32, `rgba(${wr},${wg},${wb},.85)`);
+      grd.addColorStop(.6, rgba(.35)); grd.addColorStop(1, rgba(0)); }
+    g.fillStyle = grd; g.fillRect(0, 0, S, S);
+    return c;
+  });
+}
+// Tek bir yanan LED'in tüm katmanları (hâle + reflektör + çekirdek + yıldız) tek dokuda → hızlı çizim
+function podSprite(color, r){
+  r = Math.max(2, Math.round(r));
+  return cached('pod' + color + r, () => {
+    const S = Math.ceil(r * 6.2), c = document.createElement('canvas'); c.width = c.height = S;
+    const g = c.getContext('2d'), gain = gainOf(color);
+    g.globalCompositeOperation = 'lighter';
+    const put = (img, d, a) => { g.globalAlpha = a; g.drawImage(img, S/2 - d/2, S/2 - d/2, d, d); };
+    put(sprite('glow', color), r * 6, .35 * gain);
+    put(sprite('glow', color), r * 2.4, .9);
+    put(sprite('core', color), r * 1.5, 1);
+    put(sprite('star', color), r * 4, .35);
+    return c;
+  });
+}
+
+/* =====================================================================
+   IŞIK MOTORU — her modül için parlaklık (I), hedef, tepe parlaması (kick), renk
+   ===================================================================== */
+class LightEngine {
+  constructor(){ this.m = []; this.running = false; this.timer = null; }
+  start(theme, key, mult, fast){
+    this.stop();
+    Object.assign(this, { theme, mult, running:true, onsets:[], phase:Math.PI / 2 });
+    this.setFast(fast);
+    this.m = theme.modules.map(md => ({ I:0, target:0, kick:0, sweep:null, flip:false, g:md.g,
+      base: theme.random ? null : COLORS[md.c], color: theme.random ? randomColor() : COLORS[md.c] }));
+    this.setPattern(key);
+  }
+  setFast(f){ this.fast = f; this.perWin = (f ? FAST : SAFE).perWin; }
+  stop(){ clearTimeout(this.timer); this.running = false; }
+  pause(){ clearTimeout(this.timer); }
+  resume(){ if (this.running && !PATTERNS[this.key].continuous){ clearTimeout(this.timer); this.nextAt = 0; this.step(); } }
+  setPattern(key){
+    clearTimeout(this.timer);
+    this.key = key; this.idx = 0; this.nextAt = 0; this.state = this.m.map(() => null);
+    this.steps = PATTERNS[key].continuous ? null : PATTERNS[key].steps(this.m.length);
+    this.m.forEach(x => { x.target = 0; x.sweep = null; });
+    if (this.running && this.steps) this.step();
+  }
+  // grup adları / sıra numaraları → modül sıraları
+  resolve(tokens){
+    const out = new Set();
+    tokens.forEach(t => {
+      if (typeof t === 'number') out.add(t);
+      else this.m.forEach((x, i) => { if (t === 'ALL' || x.g === t) out.add(i); });
+    });
+    return out;
+  }
+  step(){
+    if (!this.running) return;
+    const st = this.steps[this.idx % this.steps.length], now = performance.now();
+    const lit = this.resolve(st[0]);
+    const next = this.m.map((x, i) => lit.has(i) ? (this.theme.random ? randomColor() : x.base) : null);
+    if (next.some((c, i) => c && c !== this.state[i])){            // yeni flaş başlıyor
+      this.onsets = this.onsets.filter(t => now - t < WINDOW_MS);
+      if (this.onsets.length >= this.perWin){                       // sınır dolu → bekle
+        this.apply(this.m.map(() => null));
+        const wait = this.onsets[0] + WINDOW_MS - now + 2;
+        this.nextAt = now + wait;
+        this.timer = setTimeout(() => this.step(), wait);
+        return;
+      }
+      this.onsets.push(now);
+    }
+    this.apply(next);
+    this.idx = (this.idx + 1) % this.steps.length;
+    // Adımlar sabit bir saate göre planlanır: zamanlayıcı gecikmeleri birikmez, hız ayarlandığı gibi kalır
+    const dur = lit.size ? Math.max(34, st[1] * this.mult) : st[1] * this.mult;   // flaş en az ~2 kare görünsün
+    this.nextAt = (this.nextAt && now - this.nextAt < 100 ? this.nextAt : now) + dur;
+    this.timer = setTimeout(() => this.step(), Math.max(0, this.nextAt - now));
+  }
+  apply(next){
+    next.forEach((c, i) => { const x = this.m[i];
+      if (c && c !== this.state[i]) x.kick = 1;
+      x.target = c ? 1 : 0; if (c) x.color = c; });
+    this.state = next;
+  }
+  update(dt){
+    if (!this.running) return;
+    if (!this.steps){
+      // DÖNER: içteki ayna döner; sol grup ile sağ grup ters fazda
+      this.phase = (this.phase + dt / (ROT_PERIOD * this.mult) * Math.PI * 2) % (Math.PI * 2);
+      this.m.forEach(x => {
+        const a = this.phase + (x.g === 'R' || x.g === 'CR' ? Math.PI : 0), c = Math.cos(a);
+        x.I = Math.pow(Math.max(0, c), 2.2); x.kick = Math.pow(x.I, 10); x.sweep = Math.sin(a);
+        if (this.theme.random){ if (c < -.9 && !x.flip){ x.color = randomColor(); x.flip = true; } if (c > 0) x.flip = false; }
+      });
+      return;
+    }
+    const [att, dec] = PATTERNS[this.key].env;
+    this.m.forEach(x => {
+      x.I = x.target + (x.I - x.target) * Math.exp(-dt / (x.target > x.I ? att : dec));
+      x.kick *= Math.exp(-dt / .09);
+    });
+  }
+}
+
+/* =====================================================================
+   IŞIK ÇİZİCİ — her modül: metal gövde, renkli lens, reflektörlü LED'ler.
+   Yanınca: LED çekirdeği beyaza doyar, lens dolar, bloom ve çevreye taşan ışık,
+   sinematik yatay lens parlaması. Kare süresi uzarsa çözünürlük otomatik düşer
+   (hem görüntü hem ses akıcı kalır).
+   ===================================================================== */
+class LightRenderer {
+  constructor(canvas){ this.cv = canvas; this.ctx = canvas.getContext('2d'); this.layer = document.createElement('canvas');
+    this.q = 1; this.slow = 0; this.cssW = 0; this.cssH = 0; this.dirty = true; }
+  configure(theme, view, fast){ this.theme = theme; this.view = view; this.fast = fast; this.dirty = true; }
+  fit(){
+    const w = this.cv.clientWidth, h = this.cv.clientHeight;
+    if (!w || !h) return false;
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.75) * this.q;
+    if (w !== this.cssW || h !== this.cssH || dpr !== this.dpr){
+      this.cssW = w; this.cssH = h; this.dpr = dpr;
+      this.W = this.cv.width = this.layer.width = Math.round(w * dpr);
+      this.H = this.cv.height = this.layer.height = Math.round(h * dpr);
+      this.dirty = true;
+    }
+    return true;
+  }
+  // performans: yavaş karelerde çözünürlüğü düşür
+  perf(ms){
+    if (ms > 26){ if (++this.slow > 40 && this.q > .55){ this.q = Math.max(.55, this.q * .8); this.slow = 0; } }
+    else this.slow = Math.max(0, this.slow - 1);
+  }
+  layout(){
+    const { W, H } = this, n = this.theme.modules.length, colW = W / n;
+    const base = Math.min(W, H) / 4;
+    // grup içi konum (döner desende ışığın grup boyunca süpürmesi için)
+    const groups = {};
+    this.theme.modules.forEach((m, i) => (groups[m.g] = groups[m.g] || []).push(i));
+    this.heads = this.theme.modules.map((md, i) => {
+      const gl = groups[md.g], gi = gl.indexOf(i), multi = gl.length > 1;
+      const hw = colW * (n > 2 ? .86 : .8), hhMax = H * .8;
+      const cols = Math.max(1, Math.floor(hw / base));
+      const pitch = Math.min(hw / (cols + .36), base * 1.15);     // .36 = iki yandaki gövde payı
+      const rows = Math.max(1, Math.min(14, Math.floor(hhMax / pitch)));
+      const pad = pitch * .18, w = cols * pitch + pad * 2, h = rows * pitch + pad * 2;
+      const cx = colW * (i + .5), cy = H / 2, x = cx - w / 2, y = cy - h / 2;
+      const gx = multi ? gi / (gl.length - 1) * 2 - 1 : 0;
+      const pods = [];
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++){
+        const local = cols > 1 ? c / (cols - 1) * 2 - 1 : rows > 1 ? r / (rows - 1) * 2 - 1 : 0;
+        pods.push({ x:x + pad + pitch * (c + .5), y:y + pad + pitch * (r + .5), r:pitch * .42, sx: multi ? gx : local });
+      }
+      const ins = pad * .45;
+      return { x, y, w, h, cx, cy, pitch, pods, R:pitch * .22, multi, gx, col:[colW * i, colW],
+               lens:[x + ins, y + ins, w - ins * 2, h - ins * 2] };
+    });
+  }
+  buildStatic(){
+    const g = this.layer.getContext('2d'), { W, H, dpr } = this;
+    const bg = g.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.hypot(W, H) / 2);
+    bg.addColorStop(0, '#0b0c10'); bg.addColorStop(1, '#020203');
+    g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    const colorOf = md => this.theme.random ? '#d6dbe6' : COLORS[md.c];
+    if (this.view === 'wash'){
+      this.heads.forEach((h, i) => { g.fillStyle = mix(colorOf(this.theme.modules[i]), '#000000', .94); g.fillRect(h.col[0], 0, h.col[1], H);
+        g.fillStyle = '#000'; g.fillRect(h.col[0] + h.col[1] - dpr, 0, dpr * 2, H); });
+      return;
+    }
+    this.heads.forEach((h, i) => {
+      const col = colorOf(this.theme.modules[i]);
+      const tint = this.theme.random ? '#121319' : mix(col, '#000000', .84);
+      g.save(); g.shadowColor = 'rgba(0,0,0,.9)'; g.shadowBlur = 30 * dpr; g.shadowOffsetY = 8 * dpr;
+      g.fillStyle = '#0c0d11'; rrect(g, h.x, h.y, h.w, h.h, h.R); g.fill(); g.restore();
+      const sg = g.createLinearGradient(0, h.y, 0, h.y + h.h);
+      sg.addColorStop(0, '#22252d'); sg.addColorStop(.5, '#121419'); sg.addColorStop(1, '#08090b');
+      g.fillStyle = sg; rrect(g, h.x, h.y, h.w, h.h, h.R); g.fill();
+      g.lineWidth = 1.2 * dpr; g.strokeStyle = 'rgba(255,255,255,.09)'; g.stroke();
+      const [lx, ly, lw, lh] = h.lens;
+      g.fillStyle = tint; rrect(g, lx, ly, lw, lh, h.R * .7); g.fill();
+      const ledCol = this.theme.random ? '#efe7c4' : col;
+      h.pods.forEach(p => {
+        const rg = g.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+        rg.addColorStop(0, mix(tint, '#ffffff', .12)); rg.addColorStop(.2, '#07080a');
+        rg.addColorStop(.55, mix(tint, '#9aa1ad', .32)); rg.addColorStop(.82, '#1a1c21'); rg.addColorStop(1, '#050607');
+        g.fillStyle = rg; g.beginPath(); g.arc(p.x, p.y, p.r, 0, Math.PI * 2); g.fill();
+        const d = p.r * .3;
+        g.fillStyle = mix(ledCol, '#000000', .4); rrect(g, p.x - d/2, p.y - d/2, d, d, d * .2); g.fill();
+        g.strokeStyle = 'rgba(255,255,255,.15)'; g.lineWidth = Math.max(1, p.r * .06);
+        g.beginPath(); g.arc(p.x, p.y, p.r * .84, Math.PI * 1.08, Math.PI * 1.45); g.stroke();
+      });
+      g.save(); rrect(g, lx, ly, lw, lh, h.R * .7); g.clip();
+      g.fillStyle = 'rgba(255,255,255,.035)';
+      for (let x = lx; x < lx + lw; x += h.pitch / 6) g.fillRect(x, ly, Math.max(1, dpr), lh);
+      const gl = g.createLinearGradient(0, ly, 0, ly + lh * .55);
+      gl.addColorStop(0, 'rgba(255,255,255,.10)'); gl.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = gl; g.fillRect(lx, ly, lw, lh); g.restore();
+    });
+  }
+  put(img, x, y, w, h = w){ this.ctx.drawImage(img, x - w / 2, y - h / 2, w, h); }
+  draw(mods){
+    if (!this.theme || !this.fit()) return;
+    if (this.dirty){ this.layout(); this.buildStatic(); this.dirty = false; }
+    const g = this.ctx, { W, H } = this, diag = Math.hypot(W, H), n = mods.length, area = Math.min(1, 2 / n);
+    g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
+    g.drawImage(this.layer, 0, 0);
+    g.globalCompositeOperation = 'lighter';
+    mods.forEach((x, i) => {
+      if (x.I < .004) return;
+      const h = this.heads[i], col = x.color, gain = gainOf(col), sw = x.sweep;
+      // çok modüllü grupta döner ışık modülden modüle geçer
+      const I = (sw != null && h.multi) ? x.I * Math.exp(-Math.pow(h.gx - sw * 1.4, 2) * 1.1) : x.I;
+      if (I < .004) return;
+      const k = Math.min(1, x.kick || 0) * gain * (this.fast ? .5 : 1);
+      const glow = sprite('glow', col), core = sprite('core', col);
+      if (this.view === 'wash'){
+        const [cx0, cw] = h.col, cx = cx0 + cw / 2 + (!h.multi && sw != null ? sw * cw * .3 : 0);
+        g.globalAlpha = I * .7; g.fillStyle = col; g.fillRect(cx0, 0, cw, H);
+        g.globalAlpha = I;      this.put(glow, cx, H / 2, Math.max(cw * 2.2, H * 1.1));
+        g.globalAlpha = I * .5; this.put(core, cx, H / 2, Math.min(cw, H) * .9);
+        if (!this.fast){ g.globalAlpha = I * .3 * area; this.put(glow, cx, H / 2, diag * 1.6); }
+        return;
+      }
+      if (!this.fast){ g.globalAlpha = I * .06 * gain * area; g.fillStyle = col; g.fillRect(0, 0, W, H); }  // ortam sisi
+      const pod = podSprite(col, h.pitch * .42), ps = pod.width;
+      h.pods.forEach(p => {
+        const b = (sw == null || h.multi) ? I : I * Math.exp(-Math.pow(p.sx - sw * 1.4, 2) * 1.1);
+        if (b < .01) return;
+        g.globalAlpha = b; g.drawImage(pod, p.x - ps / 2, p.y - ps / 2);
+        if (k > .05){ g.globalAlpha = b * k * .6; this.put(sprite('star', col), p.x, p.y, p.r * 7); }
+      });
+      const [lx, ly, lw, lh] = h.lens;
+      g.globalAlpha = I * .3 * gain; g.fillStyle = col; rrect(g, lx, ly, lw, lh, h.R * .7); g.fill();
+      const bx = h.cx + (!h.multi && sw != null ? sw * h.w * .35 : 0);
+      g.globalAlpha = I * .8 * gain;         this.put(glow, bx, h.cy, Math.max(h.w, h.h) * 1.6);
+      g.globalAlpha = I * .45 * gain * area; this.put(glow, bx, h.cy, diag * 1.3);
+      const sa = Math.sqrt(area);
+      g.globalAlpha = Math.min(1, I * .5 + k * .4) * sa; this.put(core, bx, h.cy, W * (1.6 + .6 * k), h.pitch * .35);
+      g.globalAlpha = (I * .3 + k * .2) * sa;             this.put(glow, bx, h.cy, W * 2.4, h.pitch * 1.4);
+      if (k > .02 && !this.fast){
+        g.globalAlpha = k * .4; this.put(core, bx, h.cy, Math.min(h.w, h.h) * .9);
+        g.globalAlpha = k * .1 * area; g.fillStyle = col; g.fillRect(0, 0, W, H);
+      }
+    });
+    g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+  }
+}
+
+/* =====================================================================
+   SES SENTEZİ — her ses bir kez, örnek örnek hesaplanır ve kesintisiz döngü
+   olarak çalınır. Canlı osilatörlere göre çok daha kararlıdır: ses, ışık çizimi
+   ne kadar yoğun olursa olsun aynı kalır, takılmaz, kaymaz.
+
+   Referanslar (elektronik siren standartları ve üretici değerleri):
+   - Wail: yavaş yükselip alçalma, dakikada ~12–20 tur, ~600–1400 Hz
+   - Yelp: hızlı tarama, dakikada ~200 tur
+   - Phaser (piercer): çok hızlı tarama, saniyede ~11 tur
+   - Hi-Lo: iki ton dönüşümlü
+   - Korna (air horn): wail aralığına benzer tarama, saniyede ~85 kez tekrar →
+     kalın, vızıltılı "BRRRAP" sesi
+   Elektronik sirenler kare dalga üretir; tını, hoparlör eşitlemesiyle şekillenir.
+   ===================================================================== */
+
+// PolyBLEP: kare dalganın keskin kenarlarındaki "dijital cızırtıyı" (aliasing) yumuşatır
+function polyBlep(t, dt){
+  if (t < dt){ t /= dt; return t + t - t * t - 1; }
+  if (t > 1 - dt){ t = (t - 1) / dt; return t * t + t + t + 1; }
+  return 0;
+}
+
+/* Frekansı zamanla değişen kare dalga üretir.
+   fFn(t): t saniyedeki frekans (Hz). dur: döngü süresi.
+   Döngünün sonunda dalga tam bir turu tamamlasın diye frekans çok az ölçeklenir
+   (≤ binde birkaç) → döngü noktasında tık sesi olmaz. */
+function sweepSquare(sr, dur, fFn, duty = .5){
+  const n = Math.round(dur * sr);
+  let P = 0;
+  for (let i = 0; i < n; i++) P += fFn(i / sr) / sr;           // toplam tur sayısı
+  const k = Math.max(1, Math.round(P)) / P;
+  const out = new Float32Array(n);
+  let ph = 0;
+  for (let i = 0; i < n; i++){
+    const dt = fFn(i / sr) * k / sr;
+    let v = ph < duty ? 1 : -1;
+    v += polyBlep(ph, dt);
+    v -= polyBlep((ph + 1 - duty) % 1, dt);
+    out[i] = v;
+    ph += dt; if (ph >= 1) ph -= 1;
+  }
+  return out;
+}
+
+// Motor gibi hızlanıp yavaşlayan geçiş eğrisi (0..1 → 0..1)
+const easeUp   = (x, c) => (1 - Math.exp(-x * c)) / (1 - Math.exp(-c));
+
+/* Bir siren turu: alçaktan yükselir (rise oranı kadar sürede), sonra alçalır. */
+function sirenCurve(lo, hi, period, rise, cUp, cDown){
+  return t => {
+    const x = (t % period) / period;
+    if (x < rise) return lo + (hi - lo) * easeUp(x / rise, cUp);
+    return hi - (hi - lo) * easeUp((x - rise) / (1 - rise), cDown);
+  };
+}
+
+// Döngü başı/sonunda çok kısa yumuşatma (genlik sıçramasını önler)
+function fadeEdges(buf, sr, ms = 3){
+  const m = Math.min(buf.length >> 1, Math.round(sr * ms / 1000));
+  for (let i = 0; i < m; i++){ const g = i / m; buf[i] *= g; buf[buf.length - 1 - i] *= g; }
+  return buf;
+}
+
+const SYNTH = {
+  // WAIL: 4,8 sn'lik tur (dakikada 12,5): 2,1 sn hızlanarak yükselir, 2,7 sn yavaşlayarak iner
+  wail: sr => sweepSquare(sr, 4.8, sirenCurve(600, 1400, 4.8, .44, 2.2, 1.6)),
+  // YELP: dakikada ~200 tur; 8 tur = 2,4 sn döngü
+  yelp: sr => sweepSquare(sr, 2.4, sirenCurve(600, 1400, .3, .5, 1.6, 1.6)),
+  // PHASER: saniyede 11 tur, delici hızlı tarama
+  phaser: sr => sweepSquare(sr, 1, sirenCurve(700, 1500, 1 / 11, .5, 1, 1)),
+  // HI-LO: 950 Hz / 700 Hz, her ton 0,55 sn
+  hilo: sr => sweepSquare(sr, 1.1, t => (t % 1.1) < .55 ? 950 : 700),
+  // KORNA: her 1/85 sn'de 450→1350 Hz hızlı yükseliş + düşüş → vızıltılı polis kornası
+  horn: sr => sweepSquare(sr, 1, sirenCurve(450, 1350, 1 / 85, .3, 2, 2), .42),
+  // UYARI BİP: iş makinesi ikazı, 1040 Hz, 0,45 sn açık / 0,45 sn kapalı
+  beep: sr => {
+    const b = sweepSquare(sr, .9, () => 1040), on = .45 * sr, r = sr * .006;
+    for (let i = 0; i < b.length; i++){
+      const g = i < on ? Math.min(1, i / r, (on - i) / r) : 0;
+      b[i] *= g * .7;
+    }
+    return b;
+  },
+  // PARTİ RİTMİ: 124 BPM, 2 ölçü (16 sekizlik): davul + zil + bas
+  party: sr => {
+    const step = 60 / 124 / 2, n = Math.round(16 * step * sr), out = new Float32Array(n);
+    const bassNotes = [55, 55, 65.41, 49];
+    let seed = 12345; const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff * 2 - 1;
+    for (let s = 0; s < 16; s++){
+      const i0 = Math.round(s * step * sr);
+      if (s % 2 === 0){                                     // davul: 150→45 Hz düşen sinüs
+        let ph = 0;
+        for (let i = 0; i < .35 * sr && i0 + i < n; i++){
+          const t = i / sr, f = 45 + 105 * Math.exp(-t / .03);
+          ph += f / sr; out[i0 + i] += Math.sin(ph * 2 * Math.PI) * Math.exp(-t / .09) * .9;
+        }
+      } else {                                              // zil: tiz gürültü + bas notası
+        let prev = 0;
+        for (let i = 0; i < .05 * sr && i0 + i < n; i++){
+          const x = rnd(), hp = x - prev; prev = x;
+          out[i0 + i] += hp * Math.exp(-i / sr / .012) * .18;
+        }
+        const f = bassNotes[Math.floor(s / 4) % 4]; let ph = 0, lp = 0;
+        for (let i = 0; i < step * .95 * sr && i0 + i < n; i++){
+          ph = (ph + f / sr) % 1; const saw = ph * 2 - 1;
+          lp += (saw - lp) * .06;
+          out[i0 + i] += lp * Math.exp(-i / sr / .15) * .35;
+        }
+      }
+    }
+    return out;
+  }
+};
+
+/* =====================================================================
+   SES MOTORU
+   - Her ses önceden hesaplanmış döngüdür (AudioBufferSourceNode, loop) → kararlı.
+   - latencyHint 'playback': daha büyük ses tamponu, yoğun çizimde bile kesilme olmaz.
+   - Siren/korna zinciri: alçak kesim → 1,4 kHz vurgu (horn hoparlör tınısı) → yumuşak doyum.
+   ===================================================================== */
+const SOUNDS = { wail:'Wail', yelp:'Yelp', phaser:'Phaser', hilo:'Hi-Lo', beep:'Uyarı Bip', party:'Parti' };
+const Sound = {
+  ctx:null, master:null, siren:null, voice:null, horn:null, bufs:{},
+  on:false, volume:store.get('volume', 70) / 100,
+  init(){
+    if (this.ctx) return true;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return false;
+    try{ if (navigator.audioSession) navigator.audioSession.type = 'playback'; }catch{}
+    try{ this.ctx = new AC({ latencyHint:'playback' }); }catch{ this.ctx = new AC(); }
+    const c = this.ctx;
+    const comp = c.createDynamicsCompressor(); comp.threshold.value = -8; comp.ratio.value = 5; comp.attack.value = .003;
+    this.master = c.createGain(); this.master.gain.value = this.volume ** 2;
+    this.master.connect(comp); comp.connect(c.destination);
+    // siren hoparlörü tınısı
+    const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 280;
+    const pk = c.createBiquadFilter(); pk.type = 'peaking'; pk.frequency.value = 1400; pk.Q.value = .9; pk.gain.value = 5;
+    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 6500;
+    const sh = c.createWaveShaper(); const cv = new Float32Array(1024);
+    for (let i = 0; i < 1024; i++){ const x = i / 1023 * 2 - 1; cv[i] = Math.tanh(1.6 * x) / Math.tanh(1.6); }
+    sh.curve = cv;
+    hp.connect(pk); pk.connect(lp); lp.connect(sh); sh.connect(this.master);
+    this.siren = hp;
+    return true;
+  },
+  resume(){ if (this.init() && this.ctx.state !== 'running') this.ctx.resume().catch(() => {}); },
+  buffer(type){
+    if (this.bufs[type]) return this.bufs[type];
+    const sr = this.ctx.sampleRate, data = SYNTH[type](sr);
+    const b = this.ctx.createBuffer(1, data.length, sr); b.copyToChannel ? b.copyToChannel(data, 0) : b.getChannelData(0).set(data);
+    return this.bufs[type] = b;
+  },
+  loop(type, level, fadeIn){
+    const c = this.ctx, src = c.createBufferSource(), g = c.createGain(), t = c.currentTime;
+    src.buffer = this.buffer(type); src.loop = true;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(level, t + fadeIn);
+    src.connect(g); g.connect(type === 'party' || type === 'beep' ? this.master : this.siren);
+    src.start(t);
+    return { src, g, level };
+  },
+  release(v, sec){
+    if (!v) return;
+    const t = this.ctx.currentTime;
+    v.g.gain.cancelScheduledValues(t); v.g.gain.setValueAtTime(v.g.gain.value, t); v.g.gain.linearRampToValueAtTime(0, t + sec);
+    v.src.stop(t + sec + .02);
+  },
+  play(type){
+    this.resume(); if (!this.ctx) return;
+    this.release(this.voice, .06);
+    this.voice = this.loop(type, type === 'party' ? .9 : .32, .05);
+  },
+  stop(){ if (this.ctx) this.release(this.voice, .08); this.voice = null; },
+  // KORNA: basılı tutulduğu sürece; siren çalıyorsa korna boyunca kısılır (gerçek siren kutuları gibi)
+  hornStart(){
+    this.resume(); if (!this.ctx || this.horn) return;
+    this.horn = this.loop('horn', .42, .012);
+    if (this.voice){ const t = this.ctx.currentTime; this.voice.g.gain.setTargetAtTime(0, t, .02); }
+  },
+  hornStop(){
+    if (!this.horn || !this.ctx) return;
+    this.release(this.horn, .05); this.horn = null;
+    if (this.voice){ const t = this.ctx.currentTime; this.voice.g.gain.cancelScheduledValues(t); this.voice.g.gain.setTargetAtTime(this.voice.level, t + .05, .03); }
+  },
+  setVolume(v){ this.volume = v; store.set('volume', Math.round(v * 100));
+    if (this.master) this.master.gain.setTargetAtTime(v ** 2, this.ctx.currentTime, .03); }
+};
+
+/* =====================================================================
+   EKRAN: açık tutma, tam ekran, döndürme
+   ===================================================================== */
+const IN_APP = typeof window.CakarApp !== 'undefined';     // Android uygulaması içinde mi?
+const Wake = {
+  lock:null,
+  async on(){
+    if (IN_APP){ try{ CakarApp.keepScreenOn(true); }catch{} return; }
+    try{ if ('wakeLock' in navigator && !this.lock){ this.lock = await navigator.wakeLock.request('screen');
+      this.lock.addEventListener('release', () => this.lock = null); } }catch{}
+  },
+  async off(){ if (IN_APP){ try{ CakarApp.keepScreenOn(false); }catch{} return; }
+    try{ await this.lock?.release(); }catch{} this.lock = null; }
+};
+const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
+function enterFullscreen(){ if (IN_APP) return;
+  const el = document.documentElement, req = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (req && !fsEl()){ try{ const p = req.call(el, { navigationUI:'hide' }); p && p.catch(() => {}); }catch{} } }
+function exitFullscreen(){ const ex = document.exitFullscreen || document.webkitExitFullscreen;
+  if (ex && fsEl()){ try{ const p = ex.call(document); p && p.catch(() => {}); }catch{} } }
+['fullscreenchange','webkitfullscreenchange'].forEach(e => document.addEventListener(e, () => $('btnFs').innerHTML = icon(fsEl() ? 'min' : 'max')));
+if (IN_APP || !(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)) $('btnFs').style.display = 'none';
+
+// Döndürme: Otomatik → Yatay → Dikey
+const ORIENTS = [['auto','Otomatik döndürme'],['landscape','Yatay'],['portrait','Dikey']];
+let orient = 0;
+function applyOrientation(o, silent){
+  if (IN_APP){ try{ CakarApp.setOrientation(o); }catch{} }
+  else if (screen.orientation && screen.orientation.lock){
+    if (o === 'auto') try{ screen.orientation.unlock(); }catch{}
+    else { enterFullscreen(); screen.orientation.lock(o).catch(() => { if (!silent) toast('Telefonu yan çevirin'); }); }
+  }
+}
+$('btnRotate').addEventListener('click', () => {
+  orient = (orient + 1) % ORIENTS.length;
+  applyOrientation(ORIENTS[orient][0]); toast(ORIENTS[orient][1]);
+});
+
+let toastT;
+function toast(msg){ const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 1600); }
+function confirmFast(){
+  return new Promise(res => {
+    const m = $('modal'); m.classList.remove('hidden');
+    const done = v => { m.classList.add('hidden'); $('modalYes').onclick = $('modalNo').onclick = null; res(v); };
+    $('modalYes').onclick = () => done(true); $('modalNo').onclick = () => done(false);
+  });
+}
+
+/* =====================================================================
+   UYGULAMA DURUMU
+   ===================================================================== */
+const engine = new LightEngine(), renderer = new LightRenderer($('cv'));
+let theme = null, cfg = null, live = false, fast = false;
+const showScreen = id => document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id));
+const limits = () => fast ? FAST : SAFE;
+const maxRate = () => limits().max[cfg.pattern];
+const clampRate = r => Math.round(Math.min(maxRate(), Math.max(MIN_RATE, r)) * 10) / 10;
+const mult = () => natRate(cfg.pattern, theme.modules.length) / clampRate(cfg.rate);
+
+// Animasyon döngüsü
+let last = performance.now();
+(function loop(now){
+  const dt = Math.min(.1, (now - last) / 1000); last = now;
+  if (live){ engine.update(dt); renderer.draw(engine.m); renderer.perf(dt * 1000); }
+  requestAnimationFrame(loop);
+})(last);
+
+/* ---------- Ana ekran: tema kartları ---------- */
+THEMES.forEach(t => {
+  const b = document.createElement('button'); b.className = 'theme';
+  const bar = t.modules.map(md => `<i class="${md.g === 'R' || md.g === 'CL' ? 'd' : ''}" style="--c:${t.random ? '#c040ff' : COLORS[md.c]}"></i>`).join('');
+  b.innerHTML = `<div class="bar${t.random ? ' rnd' : ''}">${bar}</div><b>${t.name}</b><small>${t.desc}</small>`;
+  b.addEventListener('click', () => openTheme(t));
+  $('themes').appendChild(b);
+});
+
+/* ---------- Canlı ekran kontrolleri ---------- */
+function chipList(el, items, onPick){
+  el.innerHTML = '';
+  Object.entries(items).forEach(([k, label]) => { const b = document.createElement('button'); b.dataset.k = k; b.textContent = label;
+    b.addEventListener('click', () => onPick(k)); el.appendChild(b); });
+}
+const mark = (el, k) => el.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.k === String(k)));
+
+chipList($('patterns'), Object.fromEntries(Object.entries(PATTERNS).map(([k, p]) => [k, p.name])), k => {
+  cfg.pattern = k; cfg.rate = clampRate(cfg.rate); save();
+  engine.setPattern(k); engine.mult = mult(); refresh();
+});
+chipList($('sounds'), SOUNDS, k => { cfg.sound = k; save(); if (Sound.on) Sound.play(k); refresh(); });
+chipList($('views'), { led:'LED Panel', wash:'Işık Paneli' }, k => { cfg.view = k; save(); renderer.configure(theme, k, fast); refresh(); });
+
+$('rate').min = MIN_RATE; $('rate').step = .1;
+$('rate').addEventListener('input', e => setRate(+e.target.value));
+function setRate(r){ cfg.rate = clampRate(r); save(); engine.mult = mult(); refresh(); }
+function buildPresets(){
+  const el = $('ratePresets'); el.innerHTML = '';
+  [...limits().presets, 'max'].forEach(r => { const b = document.createElement('button'); b.dataset.k = r;
+    b.textContent = r === 'max' ? 'Maks' : String(r).replace('.', ',') + '/sn';
+    b.addEventListener('click', () => setRate(r === 'max' ? maxRate() : r)); el.appendChild(b); });
+}
+$('volume').value = Math.round(Sound.volume * 100);
+$('volume').addEventListener('input', e => { Sound.setVolume(e.target.value / 100); refresh(); });
+
+$('fastSwitch').addEventListener('click', async () => {
+  if (!fast && !(await confirmFast())) return;
+  fast = !fast;
+  engine.setFast(fast); renderer.configure(theme, cfg.view, fast);
+  cfg.rate = fast ? Math.max(cfg.rate, 6) : cfg.rate;
+  cfg.rate = clampRate(cfg.rate); engine.mult = mult(); save();
+  buildPresets(); refresh();
+});
+
+function save(){ store.set('theme:' + theme.id, cfg); }
+function refresh(){
+  mark($('patterns'), cfg.pattern); mark($('sounds'), cfg.sound); mark($('views'), cfg.view);
+  const r = $('rate'), max = maxRate();
+  r.max = max; r.value = cfg.rate; r.style.setProperty('--p', ((cfg.rate - MIN_RATE) / (max - MIN_RATE) * 100) + '%');
+  $('rateVal').textContent = cfg.rate.toFixed(1).replace('.', ',') + ' flaş/sn' + (cfg.rate >= max ? ' · maks' : '');
+  $('ratePresets').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.k === 'max' ? cfg.rate >= max : +b.dataset.k === cfg.rate && cfg.rate < max));
+  $('volume').style.setProperty('--p', $('volume').value + '%'); $('volVal').textContent = $('volume').value + '%';
+  $('fastSwitch').classList.toggle('on', fast); $('fastBadge').classList.toggle('on', fast);
+  $('sirenIcon').innerHTML = icon(Sound.on ? 'stop' : 'play');
+  $('sirenLabel').textContent = Sound.on ? SOUNDS[cfg.sound] : 'Siren';
+  $('btnSiren').classList.toggle('on', Sound.on);
+  const open = !$('sheet').classList.contains('closed');
+  $('btnSheet').classList.toggle('on', open); $('hud').classList.toggle('sheet-open', open);
+}
+
+function openTheme(t){
+  theme = t;
+  cfg = Object.assign({ pattern:t.pattern, rate:2, sound:t.sound, view:'led' }, store.get('theme:' + t.id, {}));
+  if (!PATTERNS[cfg.pattern]) cfg.pattern = t.pattern;
+  if (!SOUNDS[cfg.sound]) cfg.sound = t.sound;
+  cfg.rate = clampRate(+cfg.rate || 2);
+  $('liveName').textContent = t.name;
+  buildPresets();
+  showScreen('live'); live = true;
+  renderer.configure(t, cfg.view, fast);
+  engine.start(t, cfg.pattern, mult(), fast);
+  enterFullscreen(); Wake.on();
+  if (orient) applyOrientation(ORIENTS[orient][0], true);
+  if (Sound.on) Sound.play(cfg.sound);
+  try{ history.pushState({ live:true }, ''); }catch{}
+  showHud(true); refresh();
+}
+function closeTheme(){
+  if (!live) return;
+  live = false;
+  engine.stop(); Sound.stop(); Sound.hornStop(); Wake.off(); exitFullscreen();
+  if (orient) applyOrientation('auto', true);
+  $('sheet').classList.add('closed'); clearTimeout(hideT);
+  showScreen('home');
+}
+window.addEventListener('popstate', () => { if (live) closeTheme(); });
+$('btnClose').addEventListener('click', () => history.state && history.state.live ? history.back() : closeTheme());
+$('btnFs').addEventListener('click', () => fsEl() ? exitFullscreen() : enterFullscreen());
+$('btnSheet').addEventListener('click', () => { $('sheet').classList.toggle('closed'); refresh(); });
+$('btnSiren').addEventListener('click', () => { Sound.on = !Sound.on; Sound.on ? Sound.play(cfg.sound) : Sound.stop(); refresh(); });
+
+/* ---------- Kontroller: dokununca göster, 3 sn sonra gizle ---------- */
+let hideT = null, hornHeld = false;
+function showHud(){ $('hud').classList.remove('hidden'); $('live').classList.remove('nocursor'); armHide(); }
+function hideHud(){ $('hud').classList.add('hidden'); $('live').classList.add('nocursor'); $('sheet').classList.add('closed'); refresh(); }
+function armHide(){ clearTimeout(hideT); hideT = setTimeout(() => hornHeld || !$('modal').classList.contains('hidden') ? armHide() : hideHud(), 3000); }
+$('cv').addEventListener('click', () => { if ($('hud').classList.contains('hidden')) showHud(); else { clearTimeout(hideT); hideHud(); } });
+['pointerdown','input','click'].forEach(ev => $('hud').addEventListener(ev, e => { if (e.target !== $('hud')) armHide(); }, true));
+
+/* ---------- Korna: basılı tut ---------- */
+const horn = $('btnHorn');
+horn.addEventListener('pointerdown', e => { e.preventDefault(); hornHeld = true; horn.classList.add('held');
+  try{ horn.setPointerCapture(e.pointerId); }catch{} Sound.hornStart(); });
+['pointerup','pointercancel','lostpointercapture'].forEach(ev => horn.addEventListener(ev, () => {
+  if (!hornHeld) return; hornHeld = false; horn.classList.remove('held'); Sound.hornStop(); armHide(); }));
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+/* ---------- Açılış ---------- */
+$('btnOk').addEventListener('click', () => { Sound.resume(); showScreen('home'); });
+$('btnInfo').addEventListener('click', () => showScreen('intro'));
+
+/* ---------- Arka plana geçince duraklat ---------- */
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden){ engine.pause(); Sound.hornStop(); if (Sound.ctx) Sound.ctx.suspend().catch(() => {}); }
+  else if (live){ engine.resume(); if (Sound.ctx && Sound.on) Sound.ctx.resume().catch(() => {}); Wake.on(); }
+});
+window.addEventListener('resize', () => renderer.dirty = true);
+
+/* ---------- PWA (tarayıcıda çevrimdışı çalışma) ---------- */
+if (!IN_APP && 'serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost'))
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+</script>
+</body>
+</html>
