@@ -18,8 +18,8 @@ android {
         applicationId = "com.cakarsiren.simulator"   // Play'e ilk yüklemeden sonra DEĞİŞTİRİLEMEZ
         minSdk = 24                                   // Android 7.0 ve üzeri
         targetSdk = 36                                // Play'in güncel hedef API şartı
-        versionCode = 2                               // Her yeni yüklemede 1 artırın
-        versionName = "1.1"
+        versionCode = 3                               // Her yeni yüklemede 1 artırın
+        versionName = "1.2"
     }
 
     signingConfigs {
