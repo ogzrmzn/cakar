@@ -86,8 +86,8 @@ svg{display:block}
 .bar i.d{animation-delay:-.8s}
 /* cam içi çakar önizlemesi: tek siyah gövde, yuvarlak LED'ler, 4 grup sırayla */
 .bar.dash{align-items:center;gap:2px;padding:12px 10px;background:linear-gradient(#1b1d22,#060708 30%,#060708 80%,#16181c);border-radius:12px}
-.bar.dash i{flex:1;height:auto;aspect-ratio:1/2.1;border-radius:3px;box-shadow:0 10px 14px -4px var(--c);
-  background:radial-gradient(circle at 50% 27%,#fff 0 9%,var(--c) 26%,transparent 44%),radial-gradient(circle at 50% 73%,#fff 0 9%,var(--c) 26%,transparent 44%);
+.bar.dash i{flex:1;height:auto;aspect-ratio:1;border-radius:50%;box-shadow:0 8px 12px -3px var(--c);
+  background:radial-gradient(circle at 50% 50%,#fff 0 18%,var(--c) 50%,color-mix(in srgb,var(--c) 40%,#000) 100%);
   animation:pv4 2.4s steps(1,end) infinite}
 .bar.dash i.q1{animation-delay:-1.8s}.bar.dash i.q2{animation-delay:-1.2s}.bar.dash i.q3{animation-delay:-.6s}
 @keyframes pv4{0%{opacity:1}25%{opacity:.18}}
@@ -377,7 +377,7 @@ const COLORS = { B:'#1d5cff', R:'#ff1f1f', W:'#eef3ff', O:'#ff8a00' };
 const mods = (spec) => spec.split(' ').map(t => ({ c:t[0], g:t.slice(2) }));   // "B:L R:R" → modüller
 const THEMES = [
   { id:'klasik',    name:'Mavi-Kırmızı',      desc:'Klasik, iki büyük lamba',               modules:mods('B:L R:R'),                         pattern:'double', sound:'wail'  },
-  // Cam içi vantuzlu 12 LED çakar: tek siyah gövde, solda 6 kırmızı, sağda 6 mavi; her bölmede alt alta 2 LED.
+  // Cam içi vantuzlu 12 LED çakar: tek siyah gövde, tek sıra — solda 6 kırmızı, sağda 6 mavi.
   // order: kendi "Orijinal" deseninin sırası → kırmızı sol 3 → mavi sol 3 → kırmızı sağ 3 → mavi sağ 3
   { id:'serit12',   name:'12 LED Çakar',      desc:'Tek gövde, 6 kırmızı · 6 mavi',          style:'dash',
     modules:mods('R:L R:L R:L R:L R:L R:L B:R B:R B:R B:R B:R B:R'),
@@ -618,16 +618,16 @@ class LightRenderer {
     if (ms > 26){ if (++this.slow > 40 && this.q > .55){ this.q = Math.max(.55, this.q * .8); this.slow = 0; } }
     else this.slow = Math.max(0, this.slow - 1);
   }
-  // Cam içi çakar: tek yatay gövde, her bölmede alt alta 2 LED; ışık gövdenin altına yayılır
+  // Cam içi çakar: tek yatay gövde, tek sıra 12 LED; ışık gövdenin altına yayılır
   layoutDash(){
     const { W, H } = this, n = this.theme.modules.length, colW = W / n, land = W > H;
-    const bw = W * (land ? .8 : .94), pitch = bw / n, bh = pitch * 2.1;
+    const bw = W * (land ? .8 : .94), pitch = bw / n, bh = pitch * 1.15;   // tek sıra LED
     const x = (W - bw) / 2, cy = H * (land ? .3 : .21), y = cy - bh / 2;   // dikeyde üstte: panel açıkken de görünür
     this.bar = { x, y, w:bw, h:bh, pitch };
     this.heads = this.theme.modules.map((md, i) => {
-      const cx = x + pitch * (i + .5), r = pitch * .36;
+      const cx = x + pitch * (i + .5), r = pitch * .38;
       return { cx, cy, pitch, multi:false, gx:0, col:[colW * i, colW], R:pitch * .2,
-               pods:[{ x:cx, y:cy - pitch * .5, r, sx:0 }, { x:cx, y:cy + pitch * .5, r, sx:0 }] };
+               pods:[{ x:cx, y:cy, r, sx:0 }] };
     });
   }
   buildDashStatic(g){
