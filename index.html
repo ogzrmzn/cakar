@@ -173,6 +173,7 @@ svg{display:block}
 .big small{display:block;font-size:11.5px;color:var(--muted);margin-top:3px;font-weight:600}
 /* Kart ızgarası (desen ve ses) */
 .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+#patterns{grid-template-columns:repeat(4,1fr)}
 .tiles button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:76px;padding:10px 4px;
   border-radius:16px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.1);color:#d4d9e4;
   transition:background .2s,border-color .2s,transform .1s}
@@ -352,6 +353,7 @@ const ICONS = {
   p_double:'<rect x="2" y="7" width="4" height="10" rx="1.5" fill="currentColor"/><rect x="7.5" y="7" width="4" height="10" rx="1.5" fill="currentColor"/><rect x="13" y="7" width="4" height="10" rx="1.5"/><rect x="18.5" y="7" width="3.5" height="10" rx="1.5"/>',
   p_quad:'<rect x="2" y="7" width="2.6" height="10" rx="1" fill="currentColor"/><rect x="6" y="7" width="2.6" height="10" rx="1" fill="currentColor"/><rect x="10" y="7" width="2.6" height="10" rx="1" fill="currentColor"/><rect x="14" y="7" width="2.6" height="10" rx="1" fill="currentColor"/><path d="M19.5 9v6"/>',
   p_scan:'<path d="M3 12h16M15 7.5l4.5 4.5-4.5 4.5"/><circle cx="5" cy="12" r="2" fill="currentColor"/>',
+  p_groups:'<rect x="2" y="7" width="4.5" height="10" rx="1.2" fill="currentColor"/><rect x="7.2" y="7" width="4.5" height="10" rx="1.2"/><rect x="12.4" y="7" width="4.5" height="10" rx="1.2"/><rect x="17.6" y="7" width="4.4" height="10" rx="1.2"/>',
   p_rotator:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/>',
   p_strobe:'<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" fill="currentColor"/>'
 };
@@ -368,6 +370,7 @@ const COLORS = { B:'#1d5cff', R:'#ff1f1f', W:'#eef3ff', O:'#ff8a00' };
 const mods = (spec) => spec.split(' ').map(t => ({ c:t[0], g:t.slice(2) }));   // "B:L R:R" → modüller
 const THEMES = [
   { id:'klasik',    name:'Mavi-Kırmızı',      desc:'Klasik, iki büyük lamba',               modules:mods('B:L R:R'),                         pattern:'double', sound:'wail'  },
+  { id:'serit12',   name:"12'li Şerit",       desc:'Kırmızı-mavi, 3\'lü gruplar sırayla',   modules:mods('R:LR R:LR R:LR B:LB B:LB B:LB R:RR R:RR R:RR B:RB B:RB B:RB'), pattern:'groups', sound:'yelp' },
   { id:'ledbar',    name:'LED Tepe Lambası',  desc:'Uzun ışık çubuğu, sıralı hızlı çakma',  modules:mods('B:L B:L B:L B:L R:R R:R R:R R:R'), pattern:'scan',   sound:'yelp'  },
   { id:'beyazorta', name:'Beyaz Ortalı',      desc:'Mavi-kırmızı, ortada beyaz flaşlar',    modules:mods('B:L B:L B:L W:CL W:CR R:R R:R R:R'), pattern:'quad', sound:'phaser'},
   { id:'ambulans',  name:'Kırmızı-Beyaz',     desc:'Ambulans tarzı',                        modules:mods('R:L W:R'),                         pattern:'alt',    sound:'hilo'  },
@@ -382,24 +385,36 @@ const THEMES = [
    env: [yanma, sönme] zaman sabitleri (sn) — LED gibi anında yanıp kısa art ışımayla söner.
    Süreler "doğal" hızdır; seçilen hıza göre otomatik ölçeklenir.
    ===================================================================== */
-const LA = ['L', 'CR'], RA = ['R', 'CL'];            // sol renk + sağ beyaz / sağ renk + sol beyaz (çapraz)
+const LA = ['L', 'CR', 'LR', 'LB'], RA = ['R', 'CL', 'RR', 'RB'];   // sol yarı + sağ beyaz / sağ yarı + sol beyaz (çapraz)
+const RIGHT_GROUPS = ['R', 'CR', 'RR', 'RB'];
+/* GRUP deseni: şerit soldan sağa 4 eşit bölüme ayrılır ve bölümler sırayla yanar.
+   12'li şeritte: sol 3 kırmızı → sol 3 mavi → sağ 3 kırmızı → sağ 3 mavi. */
+function groupSteps(n){
+  const size = Math.max(1, Math.round(n / 4)), st = [];
+  for (let i = 0; i < n; i += size){
+    const idx = []; for (let j = i; j < Math.min(n, i + size); j++) idx.push(j);
+    st.push([idx, 110], [[], 40]);
+  }
+  return st;
+}
 const PATTERNS = {
   alt:    { name:'Dönüşüm', env:[.09,.16],  steps:() => [[LA,560],[RA,560]] },
   double: { name:'Çift',    env:[.012,.06], steps:() => [[LA,90],[[],110],[LA,90],[[],580],[RA,90],[[],110],[RA,90],[[],580]] },
   quad:   { name:'Dörtlü',  env:[.008,.045],steps:() => { const a = []; for (const g of [LA, RA]) for (let i = 0; i < 4; i++) a.push([g,50],[[],50]); return a; } },
   scan:   { name:'Akan',    env:[.008,.16], steps:n => { const s = []; for (let i = 0; i < n; i++) s.push(i); for (let i = n - 2; i > 0; i--) s.push(i); return s.map(i => [[i],100]); } },
+  groups: { name:'Grup',    env:[.008,.06], steps:groupSteps },
   rotator:{ name:'Döner',   continuous:true },
   strobe: { name:'Strobe',  env:[.008,.05], steps:() => [[['ALL'],60],[[],300],[['ALL'],60],[[],300]] },
 };
-const PATTERN_SUB = { alt:'Sırayla', double:'İkili flaş', quad:'Dörtlü flaş', scan:'Soldan sağa', rotator:'Döner lamba', strobe:'Hepsi birden' };
+const PATTERN_SUB = { groups:'Bölüm bölüm', alt:'Sırayla', double:'İkili flaş', quad:'Dörtlü flaş', scan:'Soldan sağa', rotator:'Döner lamba', strobe:'Hepsi birden' };
 
 /* GÜVENLİK
    Normal modda herhangi bir 1,05 sn'lik pencerede en fazla 3 flaş başlar (ışığa duyarlılık sınırı;
    50 ms pay ekran yenileme gecikmesi içindir). Hızlı mod kullanıcı onayıyla açılır, üst sınır 12/sn'dir
    ve o modda tüm ekranı aydınlatan efektler kapatılır (yanıp sönen alan küçülür). */
 const WINDOW_MS = 1050;
-const SAFE = { perWin:3,  max:{ alt:2.8, double:2.3, quad:2.8, scan:2.8, rotator:2.6, strobe:2.8 }, presets:[1, 1.5, 2] };
-const FAST = { perWin:13, max:{ alt:12, double:12, quad:12, scan:12, rotator:5, strobe:12 },     presets:[4, 6, 9] };
+const SAFE = { perWin:3,  max:{ groups:2.8, alt:2.8, double:2.3, quad:2.8, scan:2.8, rotator:2.6, strobe:2.8 }, presets:[1, 1.5, 2] };
+const FAST = { perWin:13, max:{ groups:12, alt:12, double:12, quad:12, scan:12, rotator:5, strobe:12 },     presets:[4, 6, 9] };
 const MIN_RATE = 1, ROT_PERIOD = .75;
 
 // Desenin doğal hızı (flaş/sn)
@@ -543,7 +558,7 @@ class LightEngine {
       // DÖNER: içteki ayna döner; sol grup ile sağ grup ters fazda
       this.phase = (this.phase + dt / (ROT_PERIOD * this.mult) * Math.PI * 2) % (Math.PI * 2);
       this.m.forEach(x => {
-        const a = this.phase + (x.g === 'R' || x.g === 'CR' ? Math.PI : 0), c = Math.cos(a);
+        const a = this.phase + (RIGHT_GROUPS.includes(x.g) ? Math.PI : 0), c = Math.cos(a);
         x.I = Math.pow(Math.max(0, c), 2.2); x.kick = Math.pow(x.I, 10); x.sweep = Math.sin(a);
         if (this.theme.random){ if (c < -.9 && !x.flip){ x.color = randomColor(); x.flip = true; } if (c > 0) x.flip = false; }
       });
@@ -965,7 +980,7 @@ let last = performance.now();
 /* ---------- Ana ekran: tema kartları ---------- */
 THEMES.forEach(t => {
   const b = document.createElement('button'); b.className = 'theme';
-  const bar = t.modules.map(md => `<i class="${md.g === 'R' || md.g === 'CL' ? 'd' : ''}" style="--c:${t.random ? '#c040ff' : COLORS[md.c]}"></i>`).join('');
+  const bar = t.modules.map(md => `<i class="${['R','CL','LB','RB'].includes(md.g) ? 'd' : ''}" style="--c:${t.random ? '#c040ff' : COLORS[md.c]}"></i>`).join('');
   b.innerHTML = `<div class="bar${t.random ? ' rnd' : ''}">${bar}</div><b>${t.name}</b><small>${t.desc}</small>`;
   b.addEventListener('click', () => openTheme(t));
   $('themes').appendChild(b);
