@@ -1120,7 +1120,14 @@ window.addEventListener('resize', () => renderer.dirty = true);
 
 /* ---------- PWA (tarayıcıda çevrimdışı çalışma) ---------- */
 if (!IN_APP && 'serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost'))
-  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  window.addEventListener('load', () => {
+    // Yeni sürüm yayınlanınca: yeni service worker devreye girer, sayfa (ışık ekranında değilsek) bir kez yenilenir
+    const hadController = !!navigator.serviceWorker.controller; let reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (hadController && !reloaded && !live){ reloaded = true; location.reload(); }
+    });
+    navigator.serviceWorker.register('sw.js', { updateViaCache:'none' }).then(r => r.update()).catch(() => {});
+  });
 </script>
 </body>
 </html>
