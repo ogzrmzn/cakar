@@ -84,6 +84,13 @@ svg{display:block}
 .bar i{flex:1;border-radius:7px;background:radial-gradient(circle at 50% 50%,#fff 0 12%,var(--c) 45%,color-mix(in srgb,var(--c) 45%,#000) 100%);
   box-shadow:0 0 14px 1px color-mix(in srgb,var(--c) 70%,transparent);animation:pv 1.6s steps(1,end) infinite}
 .bar i.d{animation-delay:-.8s}
+/* cam içi çakar önizlemesi: tek siyah gövde, yuvarlak LED'ler, 4 grup sırayla */
+.bar.dash{align-items:center;gap:2px;padding:12px 10px;background:linear-gradient(#1b1d22,#060708 30%,#060708 80%,#16181c);border-radius:12px}
+.bar.dash i{flex:1;height:auto;aspect-ratio:1/2.1;border-radius:3px;box-shadow:0 10px 14px -4px var(--c);
+  background:radial-gradient(circle at 50% 27%,#fff 0 9%,var(--c) 26%,transparent 44%),radial-gradient(circle at 50% 73%,#fff 0 9%,var(--c) 26%,transparent 44%);
+  animation:pv4 2.4s steps(1,end) infinite}
+.bar.dash i.q1{animation-delay:-1.8s}.bar.dash i.q2{animation-delay:-1.2s}.bar.dash i.q3{animation-delay:-.6s}
+@keyframes pv4{0%{opacity:1}25%{opacity:.18}}
 .bar.rnd i:nth-child(2){filter:hue-rotate(90deg)}.bar.rnd i:nth-child(3){filter:hue-rotate(180deg)}.bar.rnd i:nth-child(4){filter:hue-rotate(270deg)}
 @keyframes pv{0%{opacity:1}50%{opacity:.14}}
 @media (prefers-reduced-motion:reduce){.bar i{animation:none!important}}
@@ -173,7 +180,7 @@ svg{display:block}
 .big small{display:block;font-size:11.5px;color:var(--muted);margin-top:3px;font-weight:600}
 /* Kart ızgarası (desen ve ses) */
 .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-#patterns{grid-template-columns:repeat(4,1fr)}
+#patterns.seven{grid-template-columns:repeat(4,1fr)}
 .tiles button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:76px;padding:10px 4px;
   border-radius:16px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.1);color:#d4d9e4;
   transition:background .2s,border-color .2s,transform .1s}
@@ -353,7 +360,7 @@ const ICONS = {
   p_double:'<rect x="2" y="7" width="4" height="10" rx="1.5" fill="currentColor"/><rect x="7.5" y="7" width="4" height="10" rx="1.5" fill="currentColor"/><rect x="13" y="7" width="4" height="10" rx="1.5"/><rect x="18.5" y="7" width="3.5" height="10" rx="1.5"/>',
   p_quad:'<rect x="2" y="7" width="2.6" height="10" rx="1" fill="currentColor"/><rect x="6" y="7" width="2.6" height="10" rx="1" fill="currentColor"/><rect x="10" y="7" width="2.6" height="10" rx="1" fill="currentColor"/><rect x="14" y="7" width="2.6" height="10" rx="1" fill="currentColor"/><path d="M19.5 9v6"/>',
   p_scan:'<path d="M3 12h16M15 7.5l4.5 4.5-4.5 4.5"/><circle cx="5" cy="12" r="2" fill="currentColor"/>',
-  p_groups:'<rect x="2" y="7" width="4.5" height="10" rx="1.2" fill="currentColor"/><rect x="7.2" y="7" width="4.5" height="10" rx="1.2"/><rect x="12.4" y="7" width="4.5" height="10" rx="1.2"/><rect x="17.6" y="7" width="4.4" height="10" rx="1.2"/>',
+  p_orig:'<rect x="2" y="8" width="20" height="8" rx="2.5"/><circle cx="6" cy="12" r="1.6" fill="currentColor"/><circle cx="9.5" cy="12" r="1.6" fill="currentColor"/><circle cx="14.5" cy="12" r="1.6"/><circle cx="18" cy="12" r="1.6"/>',
   p_rotator:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/>',
   p_strobe:'<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" fill="currentColor"/>'
 };
@@ -370,7 +377,11 @@ const COLORS = { B:'#1d5cff', R:'#ff1f1f', W:'#eef3ff', O:'#ff8a00' };
 const mods = (spec) => spec.split(' ').map(t => ({ c:t[0], g:t.slice(2) }));   // "B:L R:R" → modüller
 const THEMES = [
   { id:'klasik',    name:'Mavi-Kırmızı',      desc:'Klasik, iki büyük lamba',               modules:mods('B:L R:R'),                         pattern:'double', sound:'wail'  },
-  { id:'serit12',   name:"12'li Şerit",       desc:'Kırmızı-mavi, 3\'lü gruplar sırayla',   modules:mods('R:LR R:LR R:LR B:LB B:LB B:LB R:RR R:RR R:RR B:RB B:RB B:RB'), pattern:'groups', sound:'yelp' },
+  // Cam içi vantuzlu 12 LED çakar: tek siyah gövde, solda 6 kırmızı, sağda 6 mavi; her bölmede alt alta 2 LED.
+  // order: kendi "Orijinal" deseninin sırası → kırmızı sol 3 → mavi sol 3 → kırmızı sağ 3 → mavi sağ 3
+  { id:'serit12',   name:'12 LED Çakar',      desc:'Tek gövde, 6 kırmızı · 6 mavi',          style:'dash',
+    modules:mods('R:L R:L R:L R:L R:L R:L B:R B:R B:R B:R B:R B:R'),
+    order:[[0,1,2],[6,7,8],[3,4,5],[9,10,11]], pattern:'orig', sound:'yelp' },
   { id:'ledbar',    name:'LED Tepe Lambası',  desc:'Uzun ışık çubuğu, sıralı hızlı çakma',  modules:mods('B:L B:L B:L B:L R:R R:R R:R R:R'), pattern:'scan',   sound:'yelp'  },
   { id:'beyazorta', name:'Beyaz Ortalı',      desc:'Mavi-kırmızı, ortada beyaz flaşlar',    modules:mods('B:L B:L B:L W:CL W:CR R:R R:R R:R'), pattern:'quad', sound:'phaser'},
   { id:'ambulans',  name:'Kırmızı-Beyaz',     desc:'Ambulans tarzı',                        modules:mods('R:L W:R'),                         pattern:'alt',    sound:'hilo'  },
@@ -387,14 +398,10 @@ const THEMES = [
    ===================================================================== */
 const LA = ['L', 'CR', 'LR', 'LB'], RA = ['R', 'CL', 'RR', 'RB'];   // sol yarı + sağ beyaz / sağ yarı + sol beyaz (çapraz)
 const RIGHT_GROUPS = ['R', 'CR', 'RR', 'RB'];
-/* GRUP deseni: şerit soldan sağa 4 eşit bölüme ayrılır ve bölümler sırayla yanar.
-   12'li şeritte: sol 3 kırmızı → sol 3 mavi → sağ 3 kırmızı → sağ 3 mavi. */
-function groupSteps(n){
-  const size = Math.max(1, Math.round(n / 4)), st = [];
-  for (let i = 0; i < n; i += size){
-    const idx = []; for (let j = i; j < Math.min(n, i + size); j++) idx.push(j);
-    st.push([idx, 110], [[], 40]);
-  }
+/* ORİJİNAL desen: temanın kendi çakma sırası (theme.order). Yalnızca sırası tanımlı temalarda görünür. */
+function origSteps(n, theme){
+  const order = (theme && theme.order) || [[...Array(n).keys()]];
+  const st = []; order.forEach(idx => st.push([idx, 110], [[], 40]));
   return st;
 }
 const PATTERNS = {
@@ -402,19 +409,19 @@ const PATTERNS = {
   double: { name:'Çift',    env:[.012,.06], steps:() => [[LA,90],[[],110],[LA,90],[[],580],[RA,90],[[],110],[RA,90],[[],580]] },
   quad:   { name:'Dörtlü',  env:[.008,.045],steps:() => { const a = []; for (const g of [LA, RA]) for (let i = 0; i < 4; i++) a.push([g,50],[[],50]); return a; } },
   scan:   { name:'Akan',    env:[.008,.16], steps:n => { const s = []; for (let i = 0; i < n; i++) s.push(i); for (let i = n - 2; i > 0; i--) s.push(i); return s.map(i => [[i],100]); } },
-  groups: { name:'Grup',    env:[.008,.06], steps:groupSteps },
+  orig:   { name:'Orijinal', env:[.008,.06], steps:origSteps, only:true },
   rotator:{ name:'Döner',   continuous:true },
   strobe: { name:'Strobe',  env:[.008,.05], steps:() => [[['ALL'],60],[[],300],[['ALL'],60],[[],300]] },
 };
-const PATTERN_SUB = { groups:'Bölüm bölüm', alt:'Sırayla', double:'İkili flaş', quad:'Dörtlü flaş', scan:'Soldan sağa', rotator:'Döner lamba', strobe:'Hepsi birden' };
+const PATTERN_SUB = { orig:'3\'lü sıra', alt:'Sırayla', double:'İkili flaş', quad:'Dörtlü flaş', scan:'Soldan sağa', rotator:'Döner lamba', strobe:'Hepsi birden' };
 
 /* GÜVENLİK
    Normal modda herhangi bir 1,05 sn'lik pencerede en fazla 3 flaş başlar (ışığa duyarlılık sınırı;
    50 ms pay ekran yenileme gecikmesi içindir). Hızlı mod kullanıcı onayıyla açılır, üst sınır 12/sn'dir
    ve o modda tüm ekranı aydınlatan efektler kapatılır (yanıp sönen alan küçülür). */
 const WINDOW_MS = 1050;
-const SAFE = { perWin:3,  max:{ groups:2.8, alt:2.8, double:2.3, quad:2.8, scan:2.8, rotator:2.6, strobe:2.8 }, presets:[1, 1.5, 2] };
-const FAST = { perWin:13, max:{ groups:12, alt:12, double:12, quad:12, scan:12, rotator:5, strobe:12 },     presets:[4, 6, 9] };
+const SAFE = { perWin:3,  max:{ orig:2.8, alt:2.8, double:2.3, quad:2.8, scan:2.8, rotator:2.6, strobe:2.8 }, presets:[1, 1.5, 2] };
+const FAST = { perWin:13, max:{ orig:12, alt:12, double:12, quad:12, scan:12, rotator:5, strobe:12 },     presets:[4, 6, 9] };
 const MIN_RATE = 1, ROT_PERIOD = .75;
 
 // Desenin doğal hızı (flaş/sn)
@@ -474,6 +481,18 @@ function sprite(kind, color){
     return c;
   });
 }
+// Işık konisi: lambanın altına doğru genişleyerek yayılan aydınlık (cam içi çakar)
+function coneSprite(color){
+  return cached('cone' + color, () => {
+    const Wc = 256, Hc = 512, c = document.createElement('canvas'); c.width = Wc; c.height = Hc;
+    const g = c.getContext('2d'), [r, gg, b] = hexRgb(color), rgba = a => `rgba(${r},${gg},${b},${a})`;
+    const gr = g.createLinearGradient(0, 0, 0, Hc);
+    gr.addColorStop(0, rgba(1)); gr.addColorStop(.25, rgba(.7)); gr.addColorStop(.7, rgba(.28)); gr.addColorStop(1, rgba(0));
+    g.filter = 'blur(14px)'; g.fillStyle = gr;
+    g.beginPath(); g.moveTo(Wc * .4, 16); g.lineTo(Wc * .6, 16); g.lineTo(Wc - 16, Hc - 16); g.lineTo(16, Hc - 16); g.closePath(); g.fill();
+    return c;
+  });
+}
 // Tek bir yanan LED'in tüm katmanları (hâle + reflektör + çekirdek + yıldız) tek dokuda → hızlı çizim
 function podSprite(color, r){
   r = Math.max(2, Math.round(r));
@@ -510,7 +529,7 @@ class LightEngine {
   setPattern(key){
     clearTimeout(this.timer);
     this.key = key; this.idx = 0; this.nextAt = 0; this.state = this.m.map(() => null);
-    this.steps = PATTERNS[key].continuous ? null : PATTERNS[key].steps(this.m.length);
+    this.steps = PATTERNS[key].continuous ? null : PATTERNS[key].steps(this.m.length, this.theme);
     this.m.forEach(x => { x.target = 0; x.sweep = null; });
     if (this.running && this.steps) this.step();
   }
@@ -599,7 +618,65 @@ class LightRenderer {
     if (ms > 26){ if (++this.slow > 40 && this.q > .55){ this.q = Math.max(.55, this.q * .8); this.slow = 0; } }
     else this.slow = Math.max(0, this.slow - 1);
   }
+  // Cam içi çakar: tek yatay gövde, her bölmede alt alta 2 LED; ışık gövdenin altına yayılır
+  layoutDash(){
+    const { W, H } = this, n = this.theme.modules.length, colW = W / n, land = W > H;
+    const bw = W * (land ? .8 : .94), pitch = bw / n, bh = pitch * 2.1;
+    const x = (W - bw) / 2, cy = H * (land ? .3 : .21), y = cy - bh / 2;   // dikeyde üstte: panel açıkken de görünür
+    this.bar = { x, y, w:bw, h:bh, pitch };
+    this.heads = this.theme.modules.map((md, i) => {
+      const cx = x + pitch * (i + .5), r = pitch * .36;
+      return { cx, cy, pitch, multi:false, gx:0, col:[colW * i, colW], R:pitch * .2,
+               pods:[{ x:cx, y:cy - pitch * .5, r, sx:0 }, { x:cx, y:cy + pitch * .5, r, sx:0 }] };
+    });
+  }
+  buildDashStatic(g){
+    const { x, y, w, h, pitch } = this.bar, dpr = this.dpr;
+    // iki uçtaki açılı tutucular
+    g.fillStyle = '#101216';
+    [[x - pitch * .2, -1], [x + w + pitch * .2, 1]].forEach(([ex, s]) => {
+      g.beginPath(); g.moveTo(ex, y - pitch * .1); g.lineTo(ex + s * pitch * .45, y + h * .25);
+      g.lineTo(ex + s * pitch * .45, y + h * .75); g.lineTo(ex, y + h + pitch * .1); g.closePath(); g.fill(); });
+    // siyah gövde
+    const hg = g.createLinearGradient(0, y - pitch * .2, 0, y + h + pitch * .2);
+    hg.addColorStop(0, '#2b2e36'); hg.addColorStop(.12, '#0d0e12'); hg.addColorStop(.85, '#050506'); hg.addColorStop(1, '#1d2026');
+    g.fillStyle = hg; rrect(g, x - pitch * .22, y - pitch * .2, w + pitch * .44, h + pitch * .4, pitch * .28); g.fill();
+    g.lineWidth = Math.max(1, dpr); g.strokeStyle = 'rgba(255,255,255,.13)'; g.stroke();
+    g.fillStyle = '#060709'; rrect(g, x, y, w, h, pitch * .16); g.fill();
+    // her LED: renkli kubbe + metal reflektör kabı
+    this.heads.forEach((hd, i) => {
+      const col = COLORS[this.theme.modules[i].c];
+      hd.pods.forEach(p => {
+        const rg = g.createRadialGradient(p.x - p.r * .2, p.y - p.r * .25, 0, p.x, p.y, p.r);
+        rg.addColorStop(0, mix(col, '#ffffff', .35)); rg.addColorStop(.28, mix(col, '#000000', .35));
+        rg.addColorStop(.55, mix(col, '#000000', .7)); rg.addColorStop(.78, mix(col, '#9aa1ad', .45)); rg.addColorStop(1, '#0a0b0d');
+        g.fillStyle = rg; g.beginPath(); g.arc(p.x, p.y, p.r, 0, Math.PI * 2); g.fill();
+        g.strokeStyle = 'rgba(255,255,255,.22)'; g.lineWidth = Math.max(1, p.r * .08);
+        g.beginPath(); g.arc(p.x, p.y, p.r * .8, Math.PI * 1.1, Math.PI * 1.5); g.stroke();
+      });
+    });
+    // ön cam parlaması
+    const gl = g.createLinearGradient(0, y, 0, y + h * .5);
+    gl.addColorStop(0, 'rgba(255,255,255,.09)'); gl.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = gl; rrect(g, x, y, w, h * .5, pitch * .16); g.fill();
+  }
+  drawDashLit(h, I, k, col, gain, glow){
+    const g = this.ctx, { W, H } = this, yb = this.bar.y + this.bar.h, below = H - yb;
+    // gövdenin altına (sahneye) yayılan ışık konisi — fotoğraftaki kırmızı/mavi aydınlık alan
+    const cone = coneSprite(col), cw = h.pitch * 9;
+    g.globalAlpha = I * .42 * gain; g.drawImage(cone, h.cx - cw / 2, yb - h.pitch * .3, cw, below + h.pitch * .3);
+    g.globalAlpha = I * .22 * gain; this.put(glow, h.cx, yb + below * .18, h.pitch * 3, below * .6);
+    g.globalAlpha = I * .12 * gain; this.put(glow, h.cx, this.bar.y, h.pitch * 4, h.pitch * 3);   // üste hafif taşma
+    g.globalAlpha = I * .6 * gain;  this.put(glow, h.cx, h.cy, h.pitch * 3.4);                    // bölme parlaması
+    if (!this.fast){ g.globalAlpha = I * .035 * gain; g.fillStyle = col; g.fillRect(0, 0, W, H); }
+    const pod = podSprite(col, h.pitch * .36), ps = pod.width;
+    h.pods.forEach(p => {
+      g.globalAlpha = I; g.drawImage(pod, p.x - ps / 2, p.y - ps / 2);
+      if (k > .05){ g.globalAlpha = I * k * .5; this.put(sprite('star', col), p.x, p.y, p.r * 6); }
+    });
+  }
   layout(){
+    if (this.theme.style === 'dash') return this.layoutDash();
     const { W, H } = this, n = this.theme.modules.length, colW = W / n;
     const base = Math.min(W, H) / 4;
     // grup içi konum (döner desende ışığın grup boyunca süpürmesi için)
@@ -635,6 +712,7 @@ class LightRenderer {
         g.fillStyle = '#000'; g.fillRect(h.col[0] + h.col[1] - dpr, 0, dpr * 2, H); });
       return;
     }
+    if (this.theme.style === 'dash') return this.buildDashStatic(g);
     this.heads.forEach((h, i) => {
       const col = colorOf(this.theme.modules[i]);
       const tint = this.theme.random ? '#121319' : mix(col, '#000000', .84);
@@ -689,6 +767,7 @@ class LightRenderer {
         if (!this.fast){ g.globalAlpha = I * .3 * area; this.put(glow, cx, H / 2, diag * 1.6); }
         return;
       }
+      if (this.theme.style === 'dash') return this.drawDashLit(h, I, k, col, gain, glow);
       if (!this.fast){ g.globalAlpha = I * .06 * gain * area; g.fillStyle = col; g.fillRect(0, 0, W, H); }  // ortam sisi
       const pod = podSprite(col, h.pitch * .42), ps = pod.width;
       h.pods.forEach(p => {
@@ -980,8 +1059,9 @@ let last = performance.now();
 /* ---------- Ana ekran: tema kartları ---------- */
 THEMES.forEach(t => {
   const b = document.createElement('button'); b.className = 'theme';
-  const bar = t.modules.map(md => `<i class="${['R','CL','LB','RB'].includes(md.g) ? 'd' : ''}" style="--c:${t.random ? '#c040ff' : COLORS[md.c]}"></i>`).join('');
-  b.innerHTML = `<div class="bar${t.random ? ' rnd' : ''}">${bar}</div><b>${t.name}</b><small>${t.desc}</small>`;
+  const phase = i => t.order ? ' q' + t.order.findIndex(g => g.includes(i)) : '';
+  const bar = t.modules.map((md, i) => `<i class="${['R','CL'].includes(md.g) && !t.order ? 'd' : ''}${phase(i)}" style="--c:${t.random ? '#c040ff' : COLORS[md.c]}"></i>`).join('');
+  b.innerHTML = `<div class="bar${t.random ? ' rnd' : ''}${t.style === 'dash' ? ' dash' : ''}">${bar}</div><b>${t.name}</b><small>${t.desc}</small>`;
   b.addEventListener('click', () => openTheme(t));
   $('themes').appendChild(b);
 });
@@ -1001,10 +1081,14 @@ function tileList(el, items, onPick){
     b.innerHTML = (ic ? icon(ic, 24) : '') + `<b>${name}</b><small>${sub}</small>`;
     b.addEventListener('click', () => onPick(k)); el.appendChild(b); });
 }
-tileList($('patterns'), Object.entries(PATTERNS).map(([k, p]) => ({ k, name:p.name, sub:PATTERN_SUB[k], ic:'p_' + k })), k => {
-  cfg.pattern = k; cfg.rate = clampRate(cfg.rate); save();
-  engine.setPattern(k); engine.mult = mult(); refresh();
-});
+function buildPatternTiles(t){
+  const list = Object.entries(PATTERNS).filter(([k, p]) => !p.only || t.order).sort((a, b) => (b[1].only ? 1 : 0) - (a[1].only ? 1 : 0));
+  $('patterns').classList.toggle('seven', list.length > 6);
+  tileList($('patterns'), list.map(([k, p]) => ({ k, name:p.name, sub:PATTERN_SUB[k], ic:'p_' + k })), k => {
+    cfg.pattern = k; cfg.rate = clampRate(cfg.rate); save();
+    engine.setPattern(k); engine.mult = mult(); refresh();
+  });
+}
 tileList($('sounds'), Object.entries(SOUNDS).map(([k, name]) => ({ k, name, sub:SOUND_SUB[k] })), k => {
   cfg.sound = k; save(); if (Sound.on) Sound.play(k); refresh(); });
 $('sheetClose').addEventListener('click', () => { $('sheet').classList.add('closed'); refresh(); });
@@ -1052,7 +1136,8 @@ function refresh(){
 function openTheme(t){
   theme = t;
   cfg = Object.assign({ pattern:t.pattern, rate:2, sound:t.sound, view:'led' }, store.get('theme:' + t.id, {}));
-  if (!PATTERNS[cfg.pattern]) cfg.pattern = t.pattern;
+  if (!PATTERNS[cfg.pattern] || (PATTERNS[cfg.pattern].only && !t.order)) cfg.pattern = t.pattern;
+  buildPatternTiles(t);
   if (!SOUNDS[cfg.sound]) cfg.sound = t.sound;
   cfg.rate = clampRate(+cfg.rate || 2);
   $('liveName').textContent = t.name;
