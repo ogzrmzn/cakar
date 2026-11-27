@@ -1,21 +1,18 @@
-/* Çakar & Siren Simülatörü — Service Worker
- * Görevi: uygulama dosyalarını ilk açılışta önbelleğe almak ve
- * sonraki açılışlarda internet olmadan da çalışmasını sağlamak.
- * (Tarayıcılar service worker'ı ayrı bir .js dosyası olarak ister;
- *  bu yüzden HTML'in içine gömülemez.)
+/* Çakar & Siren Simülatörü — Service Worker (çevrimdışı çalışma)
+ *
+ * Strateji:
+ *  - Sayfanın kendisi (HTML) ÖNCE İNTERNETTEN alınır → her güncelleme hemen görünür.
+ *    İnternet yoksa önbellekteki son kopya açılır (uygulama çevrimdışı da çalışır).
+ *  - İkonlar ve diğer dosyalar önbellekten hızlıca verilir, arka planda yenilenir.
  */
-const CACHE = 'cakar-sim-v5';          // Dosyaları güncellediğinizde sürümü artırın
-const ASSETS = [
-  './', './index.html', './manifest.webmanifest',
-  './icon.svg', './icon-192.png', './icon-512.png'
-];
+const CACHE = 'cakar-sim-v6';
+const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
 
-// Kurulum: tüm dosyaları önbelleğe al
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
 });
 
-// Etkinleşme: eski sürüm önbellekleri temizle
+// Eski sürüm önbelleklerini sil ve açık sayfaların kontrolünü hemen al
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
@@ -24,18 +21,25 @@ self.addEventListener('activate', e => {
   );
 });
 
-// İstekler: önce önbellek, yoksa ağ; çevrimdışı sayfa açılışında index.html'e düş
 self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
+  const req = e.request;
+  if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
+  const isPage = req.mode === 'navigate' || req.destination === 'document' || req.url.endsWith('.html');
+
+  if (isPage){
+    // Önce internet; başarısızsa önbellek
+    e.respondWith(
+      fetch(req, { cache: 'no-store' })
+        .then(res => { if (res.ok){ const copy = res.clone(); caches.open(CACHE).then(c => c.put('./index.html', copy)); } return res; })
+        .catch(() => caches.match(req, { ignoreSearch: true }).then(hit => hit || caches.match('./index.html')))
+    );
+    return;
+  }
+  // Diğer dosyalar: önbellekten hızlı ver, arka planda güncelle
   e.respondWith(
-    caches.match(e.request, { ignoreSearch: true }).then(hit => hit ||
-      fetch(e.request).then(res => {
-        if (res.ok && new URL(e.request.url).origin === location.origin) {
-          const copy = res.clone();
-          caches.open(CACHE).then(c => c.put(e.request, copy));
-        }
-        return res;
-      }).catch(() => e.request.mode === 'navigate' ? caches.match('./index.html') : undefined)
-    )
+    caches.match(req, { ignoreSearch: true }).then(hit => {
+      const net = fetch(req).then(res => { if (res.ok){ const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); } return res; });
+      return hit || net;
+    })
   );
 });
