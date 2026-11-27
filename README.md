@@ -26,7 +26,7 @@ içinde taşıyan bir Android uygulaması.
 ## Son eklenenler
 
 - **12 LED Çakar teması:** Tek sıra 12 LED (solda 6 kırmızı, sağda 6 mavi), diğer temalarla aynı görünüm.
-  Kendi **Orijinal** deseni iki adımlıdır: kırmızı 1–3 + mavi 7–9 birlikte → kırmızı 4–6 + mavi 10–12 birlikte.
+  Kendi **Orijinal** deseni: kırmızı 1–3 + mavi 7–9 birlikte 3 kez çakar → kırmızı 4–6 + mavi 10–12 birlikte 3 kez çakar.
 - Ayarlar paneli yarı saydam; tarayıcı tam ekrandan kendiliğinden çıkarsa bir sonraki dokunuşta geri gelir.
 
 ## Sürüm 1.2
