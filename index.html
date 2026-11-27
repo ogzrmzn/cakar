@@ -375,7 +375,7 @@ const THEMES = [
   // order: kendi "Orijinal" deseni → 1. adım: kırmızı 1-3 + mavi 7-9 birlikte, 2. adım: kırmızı 4-6 + mavi 10-12 birlikte
   { id:'serit12',   name:'12 LED Çakar',      desc:'Tek sıra, 6 kırmızı · 6 mavi',            rows:1,
     modules:mods('R:L R:L R:L R:L R:L R:L B:R B:R B:R B:R B:R B:R'),
-    order:[[0,1,2,6,7,8],[3,4,5,9,10,11]], burst:3, pattern:'orig', sound:'yelp' },
+    order:[[0,1,2,6,7,8],[3,4,5,9,10,11]], burst:3, boost:2.6, pattern:'orig', sound:'yelp' },   // boost: ışık gücü (1 = normal)
   { id:'ledbar',    name:'LED Tepe Lambası',  desc:'Uzun ışık çubuğu, sıralı hızlı çakma',  modules:mods('B:L B:L B:L B:L R:R R:R R:R R:R'), pattern:'scan',   sound:'yelp'  },
   { id:'beyazorta', name:'Beyaz Ortalı',      desc:'Mavi-kırmızı, ortada beyaz flaşlar',    modules:mods('B:L B:L B:L W:CL W:CR R:R R:R R:R'), pattern:'quad', sound:'phaser'},
   { id:'ambulans',  name:'Kırmızı-Beyaz',     desc:'Ambulans tarzı',                        modules:mods('R:L W:R'),                         pattern:'alt',    sound:'hilo'  },
@@ -711,6 +711,22 @@ class LightRenderer {
       if (k > .02 && !this.fast){
         g.globalAlpha = k * .4; this.put(core, bx, h.cy, Math.min(h.w, h.h) * .9);
         g.globalAlpha = k * .1 * area; g.fillStyle = col; g.fillRect(0, 0, W, H);
+      }
+      // GÜÇLÜ IŞIK (theme.boost): temaya özel ek ışık katmanları — LED'ler "patlar"
+      const B = (this.theme.boost || 1) - 1;
+      if (B > 0){
+        const pr = h.pitch * .42;
+        h.pods.forEach(p => {                                     // her LED: ikinci çekirdek + geniş renkli hâle
+          g.globalAlpha = I * Math.min(1, B * .7); g.drawImage(pod, p.x - ps / 2, p.y - ps / 2);
+          g.globalAlpha = Math.min(1, I * .55 * B * gain); this.put(glow, p.x, p.y, pr * 12);    // geniş renkli hâle
+          g.globalAlpha = Math.min(1, I * .7 * B * gain);  this.put(glow, p.x, p.y, pr * 4.5);   // yoğun renkli çekirdek ışığı
+          g.globalAlpha = I * .35 * B;                     this.put(core, p.x, p.y, pr * 2.2);
+        });
+        g.globalAlpha = Math.min(1, I * .7 * B * gain); this.put(glow, bx, h.cy, h.pitch * 9, h.pitch * 6);  // bölme parlaması
+        g.globalAlpha = Math.min(1, I * .4 * B * gain * area); this.put(glow, bx, h.cy, diag * 1.2);        // çevreye taşan renkli ışık
+        g.globalAlpha = Math.min(1, I * .15 * B) * sa;   this.put(glow, bx, h.cy, W * 2.4, h.pitch * 1.8);     // renkli yatay parlama
+        if (!this.fast){ g.globalAlpha = I * .05 * B * gain * area; g.fillStyle = col; g.fillRect(0, 0, W, H); }
+        if (k > .05){ g.globalAlpha = k * .5 * B; this.put(core, bx, h.cy, h.pitch * 2.4); }          // flaş anı patlaması
       }
     });
     g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
