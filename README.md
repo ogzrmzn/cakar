@@ -25,9 +25,8 @@ içinde taşıyan bir Android uygulaması.
 
 ## Son eklenenler
 
-- **12 LED Çakar teması:** Cam içi vantuzlu çakar görünümü — tek siyah gövde, tek sıra: solda 6 kırmızı, sağda 6 mavi,
-  tek sıra LED; ışık gövdenin altına koni şeklinde yayılır. Kendi **Orijinal** deseni:
-  kırmızı sol 3 → mavi sol 3 → kırmızı sağ 3 → mavi sağ 3 (bu desen yalnızca bu temada görünür).
+- **12 LED Çakar teması:** Tek sıra 12 LED (solda 6 kırmızı, sağda 6 mavi), diğer temalarla aynı görünüm.
+  Kendi **Orijinal** deseni iki adımlıdır: kırmızı 1–3 + mavi 7–9 birlikte → kırmızı 4–6 + mavi 10–12 birlikte.
 - Ayarlar paneli yarı saydam; tarayıcı tam ekrandan kendiliğinden çıkarsa bir sonraki dokunuşta geri gelir.
 
 ## Sürüm 1.2
