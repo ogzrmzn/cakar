@@ -23,6 +23,12 @@ içinde taşıyan bir Android uygulaması.
 - **Tarayıcıda:** Depo ayarlarından *Settings → Pages → Branch: main / (root)* açılırsa
   `https://ogzrmzn.github.io/cakar/` adresinden açılır, ana ekrana eklenebilir.
 
+## Son eklenenler
+
+- **12'li Şerit teması:** Tek şeritte 12 bölme (sol 3 kırmızı, 3 mavi · sağ 3 kırmızı, 3 mavi).
+  Yeni **Grup** deseniyle sırayla yanar: sol kırmızı → sol mavi → sağ kırmızı → sağ mavi.
+- Ayarlar paneli yarı saydam; tarayıcı tam ekrandan kendiliğinden çıkarsa bir sonraki dokunuşta geri gelir.
+
 ## Sürüm 1.2
 
 - **Ayarlar paneli yeniden tasarlandı:** Işık deseni seçimi panelin içine, Siren sesi'nin üstüne taşındı
